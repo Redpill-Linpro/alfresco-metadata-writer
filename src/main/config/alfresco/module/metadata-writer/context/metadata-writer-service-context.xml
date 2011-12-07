@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE beans PUBLIC '-//SPRING//DTD BEAN//EN' 'http://www.springframework.org/dtd/spring-beans.dtd'>
+
+<beans>
+
+  <bean id="metadata-writer.sample.service" class="org.redpill.alfresco.module.metadatawriter.services.impl.MetadataServiceImpl"
+    init-method="register" parent="metadata-writer.abstract.service">
+    <constructor-arg type="java.lang.String" value="sampleService" />
+    <constructor-arg type="java.util.List">
+      <list></list>
+    </constructor-arg>
+    <constructor-arg type="java.util.Properties">
+      <props>
+        <prop key="MyDescription">
+          cm:description
+        </prop>
+        <prop key="DocumentVersion">
+          cm:versionLabel
+        </prop>
+      </props>
+    </constructor-arg>
+  </bean>
+
+</beans>

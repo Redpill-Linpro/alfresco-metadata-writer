@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Definition of the metadata writeable aspect -->
+<model name="mdw:metadata-writeable-model"
+	xmlns="http://www.alfresco.org/model/dictionary/1.0">
+
+	<!-- Optional meta-data about the model -->
+	<description>Metadata writeable aspect</description>
+	<author>Carl Nordenfelt, Redpill Linpro AB</author>
+	<version>1.0</version>
+
+	<!-- Imports are required to allow references to definitions in other models -->
+	<imports>
+		<!-- Import Alfresco Dictionary Definitions -->
+		<import uri="http://www.alfresco.org/model/dictionary/1.0"
+			prefix="d" />
+	</imports>
+
+	<!-- Introduction of new namespaces defined by this model -->
+	<namespaces>
+		<namespace uri="http://www.redpill.se/model/metadata-writer/1.0"
+			prefix="mdw" />
+	</namespaces>
+
+	<aspects>
+		<aspect name="mdw:metadatawriteable">
+			<title>Metadata writeable</title>
+			<properties>
+                <property name="mdw:serviceName">
+                    <title>Service name</title>
+                    <type>d:text</type>
+                </property>
+            </properties>
+		</aspect>
+	</aspects>
+
+</model>

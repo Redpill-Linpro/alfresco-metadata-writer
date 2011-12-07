@@ -1,0 +1,162 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.redpill.alfresco.module</groupId>
+  <artifactId>metadatawriter</artifactId>
+  <packaging>amp</packaging>
+  <name>Metadata Writer Framework</name>
+  <version>3.4.6</version>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.jmock</groupId>
+      <artifactId>jmock</artifactId>
+      <version>2.5.1</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jmock</groupId>
+      <artifactId>jmock-legacy</artifactId>
+      <version>2.5.1</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.7</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi</artifactId>
+      <version>3.8-beta4</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.alfresco</groupId>
+      <artifactId>alfresco-datamodel</artifactId>
+      <version>3.4.e</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.alfresco</groupId>
+      <artifactId>alfresco-repository</artifactId>
+      <version>3.4.e</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.alfresco</groupId>
+      <artifactId>alfresco-core</artifactId>
+      <version>3.4.e</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.alfresco</groupId>
+      <artifactId>alfresco-web-client</artifactId>
+      <version>3.4.e</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging</artifactId>
+      <version>1.1.1</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>apache-log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>1.2.15</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.extensions.surf</groupId>
+      <artifactId>spring-surf-core</artifactId>
+      <version>1.0.0</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.pdfbox</groupId>
+      <artifactId>pdfbox</artifactId>
+      <version>1.5.0</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>1.4</version>
+      <scope>provided</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.alfresco.maven.plugin</groupId>
+        <artifactId>maven-amp-plugin</artifactId>
+        <version>3.0.3-SNAPSHOT</version>
+        <extensions>true</extensions>
+        <configuration>
+          <mAmpConfigDirectory>src/main/config</mAmpConfigDirectory>
+          <mAmpJarExcludes>alfresco/**</mAmpJarExcludes>
+          <archive>
+            <addMavenDescriptor>false</addMavenDescriptor>
+          </archive>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.3.2</version>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <repositories>
+    <repository>
+      <id>alfresco</id>
+      <url>http://maven.alfresco.com/nexus/content/groups/public/</url>
+    </repository>
+    <repository>
+      <id>alfresco-linpro-snapshots</id>
+      <url>http://maven.alfresco.com/nexus/content/groups/public-snapshots</url>
+      <snapshots>
+        <enabled>true</enabled>
+        <updatePolicy>daily</updatePolicy>
+      </snapshots>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>alfresco</id>
+      <url>http://maven.alfresco.com/nexus/content/groups/public/</url>
+    </pluginRepository>
+    <pluginRepository>
+      <id>alfresco-linpro-snapshots</id>
+      <url>http://maven.alfresco.com/nexus/content/groups/public-snapshots</url>
+      <snapshots>
+        <enabled>true</enabled>
+        <updatePolicy>daily</updatePolicy>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
+
+</project>

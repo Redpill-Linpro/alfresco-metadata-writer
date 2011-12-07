@@ -1,0 +1,16 @@
+<alfresco-config>
+
+	<config evaluator="string-compare" condition="Action Wizards">
+    	<aspects>
+         	<aspect name="mdw:metadatawriteable"/> 
+		</aspects>
+	</config>
+	
+	<config evaluator="aspect-name" condition="mdw:metadatawriteable">
+        <property-sheet>
+            <separator name="sep1" display-label="Metadata writers" component-generator="HeaderSeparatorGenerator" />
+            <show-property name="mdw:serviceName" />
+        </property-sheet>
+    </config>
+
+</alfresco-config>
