@@ -1,6 +1,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
   <groupId>org.redpill.alfresco.module</groupId>
   <artifactId>metadatawriter</artifactId>
   <packaging>amp</packaging>
@@ -102,12 +106,12 @@
   </dependencies>
 
   <issueManagement>
-  	<system>Google Code</system>
-  	<url>http://code.google.com/p/alfresco-metadata-writer/issues/list</url>
+    <system>Google Code</system>
+    <url>http://code.google.com/p/alfresco-metadata-writer/issues/list</url>
   </issueManagement>
   <organization>
-  	<name>Redpill Linpro</name>
-  	<url>http://www.redpill-linpro.com</url>
+    <name>Redpill Linpro</name>
+    <url>http://www.redpill-linpro.com</url>
   </organization>
   <build>
     <plugins>
@@ -132,6 +136,17 @@
         <configuration>
           <source>1.6</source>
           <target>1.6</target>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.11</version>
+        <configuration>
+          <excludes>
+            <exclude>**/ExportMetadataAspectTest.java</exclude>
+          </excludes>
         </configuration>
       </plugin>
     </plugins>
