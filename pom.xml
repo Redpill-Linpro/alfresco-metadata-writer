@@ -101,6 +101,14 @@
 
   </dependencies>
 
+  <issueManagement>
+  	<system>Google Code</system>
+  	<url>http://code.google.com/p/alfresco-metadata-writer/issues/list</url>
+  </issueManagement>
+  <organization>
+  	<name>Redpill Linpro</name>
+  	<url>http://www.redpill-linpro.com</url>
+  </organization>
   <build>
     <plugins>
       <plugin>
@@ -135,7 +143,7 @@
       <url>http://maven.alfresco.com/nexus/content/groups/public/</url>
     </repository>
     <repository>
-      <id>alfresco-linpro-snapshots</id>
+      <id>alfresco-snapshots</id>
       <url>http://maven.alfresco.com/nexus/content/groups/public-snapshots</url>
       <snapshots>
         <enabled>true</enabled>
@@ -150,7 +158,7 @@
       <url>http://maven.alfresco.com/nexus/content/groups/public/</url>
     </pluginRepository>
     <pluginRepository>
-      <id>alfresco-linpro-snapshots</id>
+      <id>alfresco-snapshots</id>
       <url>http://maven.alfresco.com/nexus/content/groups/public-snapshots</url>
       <snapshots>
         <enabled>true</enabled>
