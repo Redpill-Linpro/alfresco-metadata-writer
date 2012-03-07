@@ -5,11 +5,11 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
-  <groupId>org.redpill.alfresco.module</groupId>
+  <groupId>org.redpill-linpro.alfresco.module</groupId>
   <artifactId>metadatawriter</artifactId>
-  <packaging>amp</packaging>
+  <packaging>jar</packaging>
   <name>Metadata Writer Framework</name>
-  <version>3.4.6</version>
+  <version>3.4.6.1</version>
 
   <dependencies>
     <dependency>
@@ -37,7 +37,7 @@
       <groupId>org.apache.poi</groupId>
       <artifactId>poi</artifactId>
       <version>3.8-beta4</version>
-      <scope>compile</scope>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -109,26 +109,23 @@
     <system>Google Code</system>
     <url>http://code.google.com/p/alfresco-metadata-writer/issues/list</url>
   </issueManagement>
+
   <organization>
     <name>Redpill Linpro</name>
     <url>http://www.redpill-linpro.com</url>
   </organization>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.alfresco.maven.plugin</groupId>
-        <artifactId>maven-amp-plugin</artifactId>
-        <version>3.0.3-SNAPSHOT</version>
-        <extensions>true</extensions>
-        <configuration>
-          <mAmpConfigDirectory>src/main/config</mAmpConfigDirectory>
-          <mAmpJarExcludes>alfresco/**</mAmpJarExcludes>
-          <archive>
-            <addMavenDescriptor>false</addMavenDescriptor>
-          </archive>
-        </configuration>
-      </plugin>
 
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/config</directory>
+        <includes>
+          <include>**/*.xml</include>
+        </includes>
+      </resource>
+    </resources>
+
+    <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -147,6 +144,18 @@
           <excludes>
             <exclude>**/ExportMetadataAspectTest.java</exclude>
           </excludes>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.3.2</version>
+        <configuration>
+          <includes>
+            <include>**/*.class</include>
+            <include>**/*.xml</include>
+          </includes>
         </configuration>
       </plugin>
     </plugins>
@@ -181,5 +190,16 @@
       </snapshots>
     </pluginRepository>
   </pluginRepositories>
+
+  <distributionManagement>
+    <repository>
+      <id>redpill-linpro-releases</id>
+      <url>http://javadev.redpill-linpro.com/nexus/content/repositories/releases</url>
+    </repository>
+    <snapshotRepository>
+      <id>redpill-linpro-snapshots</id>
+      <url>http://javadev.redpill-linpro.com/nexus/content/repositories/snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>
 
 </project>

@@ -5,7 +5,7 @@
   <bean id="metadata-writer.dictionaryBootstrap" parent="dictionaryModelBootstrap" depends-on="dictionaryBootstrap">
     <property name="models">
       <list>
-        <value>alfresco/module/metadata-writer/context/metadataWriterModel.xml</value>
+        <value>alfresco/extension/model/metadataWriterModel.xml</value>
       </list>
     </property>
   </bean>
@@ -13,7 +13,7 @@
   <bean id="metadata-writer.configBootstrap" class="org.alfresco.web.config.WebClientConfigBootstrap" init-method="init">
     <property name="configs">
       <list>
-        <value>alfresco/module/metadata-writer/context/metadata-writer-web-client-config.xml</value>
+        <value>alfresco/extension/metadata-writer-web-client-config.xml</value>
       </list>
     </property>
   </bean>
