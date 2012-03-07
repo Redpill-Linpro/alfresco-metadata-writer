@@ -41,9 +41,9 @@ public class MetadataContentFactoryImpl implements MetadataContentFactory {
       throw new ContentIOException("Mimetype not specified for node " + contentNode);
     }
 
-    for (final MetadataContentInstantiator i : _instantiators) {
-      if (i.supports(mimetype)) {
-        return i.create(getContentReader(contentNode), getContentWriter(contentNode));
+    for (final MetadataContentInstantiator instantiator : _instantiators) {
+      if (instantiator.supports(mimetype)) {
+        return instantiator.create(getContentReader(contentNode), getContentWriter(contentNode));
       }
     }
 
