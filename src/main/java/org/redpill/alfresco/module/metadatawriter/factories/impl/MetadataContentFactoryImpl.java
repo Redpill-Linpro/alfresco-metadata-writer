@@ -13,6 +13,7 @@ import org.redpill.alfresco.module.metadatawriter.factories.MetadataContentFacto
 import org.redpill.alfresco.module.metadatawriter.factories.UnsupportedMimetypeException;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataContentInstantiator;
+import org.springframework.util.StringUtils;
 
 public class MetadataContentFactoryImpl implements MetadataContentFactory {
 
@@ -37,18 +38,40 @@ public class MetadataContentFactoryImpl implements MetadataContentFactory {
 
     final String mimetype = findMimetype(getContentReader(contentNode));
 
-    if (null == mimetype) {
+    if (!StringUtils.hasText(mimetype)) {
       throw new ContentIOException("Mimetype not specified for node " + contentNode);
     }
 
+    final MetadataContentInstantiator instantiator = getMetadataContentInstantiator(mimetype);
+
+    if (instantiator == null) {
+      throw new UnsupportedMimetypeException("This MetadataContentFactory does not support mimetype " + mimetype);
+    }
+
+    return instantiator.create(getContentReader(contentNode), getContentWriter(contentNode));
+  }
+
+  @Override
+  public boolean supportsMetadataWrite(final NodeRef contentNode) {
+    assert null != contentNode;
+
+    final String mimetype = findMimetype(getContentReader(contentNode));
+
+    if (!StringUtils.hasText(mimetype)) {
+      return false;
+    }
+
+    return getMetadataContentInstantiator(mimetype) != null;
+  }
+
+  private MetadataContentInstantiator getMetadataContentInstantiator(final String mimetype) {
     for (final MetadataContentInstantiator instantiator : _instantiators) {
       if (instantiator.supports(mimetype)) {
-        return instantiator.create(getContentReader(contentNode), getContentWriter(contentNode));
+        return instantiator;
       }
     }
 
-    throw new UnsupportedMimetypeException("This MetadataContentFactory does not support mimetype " + mimetype);
-
+    return null;
   }
 
   // ---------------------------------------------------
@@ -58,6 +81,7 @@ public class MetadataContentFactoryImpl implements MetadataContentFactory {
     if (null == contentReader) {
       throw new ContentIOException("ContentReader must be supplied!");
     }
+
     return contentReader.getMimetype();
   }
 
@@ -68,6 +92,7 @@ public class MetadataContentFactoryImpl implements MetadataContentFactory {
     if (reader == null || !reader.exists()) {
       throw new ContentIOException("Could not get ContentReader from node " + contentNode);
     }
+
     return reader;
   }
 

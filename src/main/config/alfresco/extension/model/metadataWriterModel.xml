@@ -26,6 +26,11 @@
           <title>Service name</title>
           <type>d:text</type>
         </property>
+        <property name="mdw:failOnUnsupported">
+          <title>If the service will throw an exception on an invalid document or not.</title>
+          <type>d:boolean</type>
+          <default>true</default>
+        </property>
       </properties>
     </aspect>
   </aspects>

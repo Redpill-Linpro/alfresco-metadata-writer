@@ -113,6 +113,14 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
   private void updateProperties(final NodeRef node, final Map<QName, Serializable> properties) {
     final String serviceName = (String) _nodeService.getProperty(node, MetadataWriterModel.PROP_METADATA_SERVICE_NAME);
 
+    final Serializable failOnUnsupportedValue = _nodeService.getProperty(node, MetadataWriterModel.PROP_METADATA_FAIL_ON_UNSUPPORTED);
+
+    boolean failOnUnsupported = true;
+
+    if (failOnUnsupportedValue != null) {
+      failOnUnsupported = (Boolean) failOnUnsupportedValue;
+    }
+
     try {
       _lockService.checkForLock(node);
     } catch (final NodeLockedException e) {
@@ -134,8 +142,12 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
       } catch (final UnknownServiceNameException e) {
         LOG.warn("Could not find Metadata service named " + serviceName, e);
       } catch (final UpdateMetadataException ume) {
-        throw new AlfrescoRuntimeException("Could not write properties " + properties + " to node "
-            + _nodeService.getProperty(node, ContentModel.PROP_NAME), ume);
+        if (failOnUnsupported) {
+          throw new AlfrescoRuntimeException("Could not write properties " + properties + " to node "
+              + _nodeService.getProperty(node, ContentModel.PROP_NAME), ume);
+        } else {
+          LOG.error("Could not write properties " + properties + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME), ume);
+        }
       }
     } else {
       LOG.info("No Metadata service specified for node " + node);

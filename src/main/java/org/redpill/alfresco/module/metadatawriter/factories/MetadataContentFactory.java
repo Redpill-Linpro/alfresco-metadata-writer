@@ -9,4 +9,6 @@ public interface MetadataContentFactory {
 
   ContentFacade createContent(NodeRef contentNode) throws UnsupportedMimetypeException, IOException;
 
+  boolean supportsMetadataWrite(NodeRef contentNode);
+
 }
