@@ -45,8 +45,7 @@
   </bean>
 
   <!-- The write metadata aspect -->
-  <bean id="metadata-writer.writeMetadataAspect" class="org.redpill.alfresco.module.metadatawriter.aspect.impl.ExportMetadataAspect"
-    init-method="init">
+  <bean id="metadata-writer.writeMetadataAspect" class="org.redpill.alfresco.module.metadatawriter.aspect.impl.ExportMetadataAspect">
     <constructor-arg type="org.redpill.alfresco.module.metadatawriter.factories.MetadataServiceRegistry" ref="metadata-writer.serviceRegistry" />
     <constructor-arg type="org.alfresco.service.cmr.repository.NodeService" ref="nodeService" />
     <constructor-arg type="org.alfresco.service.cmr.dictionary.DictionaryService" ref="dictionaryService" />
@@ -55,8 +54,8 @@
   </bean>
 
   <!-- Metadata service abstract bean -->
-  <bean id="metadata-writer.abstract.service" class="org.redpill.alfresco.module.metadatawriter.services.impl.MetadataServiceImpl"
-    init-method="register" abstract="true">
+  <bean id="metadata-writer.abstract.service" class="org.redpill.alfresco.module.metadatawriter.services.impl.MetadataServiceImpl" init-method="register"
+    abstract="true">
     <constructor-arg type="org.redpill.alfresco.module.metadatawriter.factories.MetadataServiceRegistry" ref="metadata-writer.serviceRegistry" />
     <constructor-arg type="org.redpill.alfresco.module.metadatawriter.factories.MetadataContentFactory" ref="metadata-writer.contentFactory" />
     <constructor-arg type="org.alfresco.service.namespace.NamespaceService" ref="namespaceService" />

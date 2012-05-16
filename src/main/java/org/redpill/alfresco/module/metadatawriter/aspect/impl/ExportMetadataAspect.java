@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.model.ContentModel;
+import org.alfresco.repo.node.NodeServicePolicies.OnAddAspectPolicy;
 import org.alfresco.repo.node.NodeServicePolicies.OnUpdatePropertiesPolicy;
 import org.alfresco.repo.policy.Behaviour;
 import org.alfresco.repo.policy.JavaBehaviour;
@@ -26,14 +27,18 @@ import org.redpill.alfresco.module.metadatawriter.factories.UnknownServiceNameEx
 import org.redpill.alfresco.module.metadatawriter.model.MetadataWriterModel;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataService;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataService.UpdateMetadataException;
+import org.springframework.beans.factory.InitializingBean;
 
-public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdatePropertiesPolicy {
+public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdatePropertiesPolicy, OnAddAspectPolicy, InitializingBean {
 
   private static final Log LOG = LogFactory.getLog(ExportMetadataAspect.class);
 
   private final PolicyComponent _policyComponent;
+
   private final NodeService _nodeService;
+
   private final DictionaryService _dictionaryService;
+
   private final LockService _lockService;
 
   private final MetadataServiceRegistry _metadataServiceRegistry;
@@ -50,20 +55,10 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
     _lockService = lockService;
   }
 
-  // ---------------------------------------------------
-  // Public methods
-  // ---------------------------------------------------
-
-  public void init() {
-    _policyComponent.bindClassBehaviour(OnUpdatePropertiesPolicy.QNAME, MetadataWriterModel.ASPECT_METADATA_WRITEABLE, new JavaBehaviour(this,
-        "onUpdateProperties", Behaviour.NotificationFrequency.TRANSACTION_COMMIT));
-
-    _policyComponent.bindClassBehaviour(QName.createQName(NamespaceService.ALFRESCO_URI, "afterCreateVersion"),
-        MetadataWriterModel.ASPECT_METADATA_WRITEABLE, new JavaBehaviour(this, "afterCreateVersion", Behaviour.NotificationFrequency.FIRST_EVENT));
-  }
-
   @Override
   public void onUpdateProperties(final NodeRef nodeRef, final Map<QName, Serializable> before, final Map<QName, Serializable> after) {
+    LOG.error(1);
+
     if (!_nodeService.exists(nodeRef)) {
       return;
     }
@@ -82,6 +77,8 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
 
   @Override
   public void afterCreateVersion(final NodeRef versionableNode, final Version version) {
+    LOG.error(2);
+
     if (!_nodeService.exists(versionableNode)) {
       return;
     }
@@ -100,6 +97,26 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
 
       updateProperties(versionableNode, properties);
     }
+  }
+
+  @Override
+  public void onAddAspect(final NodeRef nodeRef, final QName aspectTypeQName) {
+    LOG.error(3);
+
+    if (!_nodeService.exists(nodeRef)) {
+      return;
+    }
+
+    verifyMetadataExportableNode(nodeRef, MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Aspect updated for node " + nodeRef);
+    }
+
+    // Only update properties if before and after differ
+    final Map<QName, Serializable> properties = _nodeService.getProperties(nodeRef);
+
+    updateProperties(nodeRef, properties);
   }
 
   // ---------------------------------------------------
@@ -152,6 +169,19 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
     } else {
       LOG.info("No Metadata service specified for node " + node);
     }
+  }
+
+  @Override
+  public void afterPropertiesSet() throws Exception {
+    _policyComponent.bindClassBehaviour(OnUpdatePropertiesPolicy.QNAME, MetadataWriterModel.ASPECT_METADATA_WRITEABLE, new JavaBehaviour(this,
+        "onUpdateProperties", Behaviour.NotificationFrequency.TRANSACTION_COMMIT));
+
+    _policyComponent.bindClassBehaviour(QName.createQName(NamespaceService.ALFRESCO_URI, "afterCreateVersion"),
+        MetadataWriterModel.ASPECT_METADATA_WRITEABLE, new JavaBehaviour(this, "afterCreateVersion",
+            Behaviour.NotificationFrequency.TRANSACTION_COMMIT));
+
+    _policyComponent.bindClassBehaviour(OnAddAspectPolicy.QNAME, MetadataWriterModel.ASPECT_METADATA_WRITEABLE, new JavaBehaviour(this,
+        "onAddAspect", Behaviour.NotificationFrequency.TRANSACTION_COMMIT));
   }
 
 }
