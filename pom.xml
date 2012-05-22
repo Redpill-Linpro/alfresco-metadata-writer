@@ -133,11 +133,6 @@
           <groupId>commons-codec</groupId>
           <artifactId>commons-codec</artifactId>
         </exclusion>
-        <!-- This one is included in Alfresco, same version -->
-        <exclusion>
-          <groupId>org.apache.xmlgraphics</groupId>
-          <artifactId>xmlgraphics-commons</artifactId>
-        </exclusion>
         <!-- This one is included in Alfresco as 4.2, docx4j points to 4.3.1 -->
         <exclusion>
           <groupId>org.apache.avalon.framework</groupId>
