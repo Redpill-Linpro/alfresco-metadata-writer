@@ -5,7 +5,7 @@
   <bean id="metadata-writer.dictionaryBootstrap" parent="dictionaryModelBootstrap" depends-on="dictionaryBootstrap">
     <property name="models">
       <list>
-        <value>alfresco/module/metadata-writer/context/metadataWriterModel.xml</value>
+        <value>alfresco/extension/model/metadataWriterModel.xml</value>
       </list>
     </property>
   </bean>
@@ -13,7 +13,7 @@
   <bean id="metadata-writer.configBootstrap" class="org.alfresco.web.config.WebClientConfigBootstrap" init-method="init">
     <property name="configs">
       <list>
-        <value>alfresco/module/metadata-writer/context/metadata-writer-web-client-config.xml</value>
+        <value>alfresco/extension/metadata-writer-web-client-config.xml</value>
       </list>
     </property>
   </bean>
@@ -22,11 +22,17 @@
   <bean id="metadata-writer.serviceRegistry" class="org.redpill.alfresco.module.metadatawriter.factories.impl.MetadataServiceRegistryImpl" />
 
   <!-- Factory amd instantiators for content types -->
-  <bean id="metadata-writer.MSWordInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.DefaultContentInstantiator$MSWordContentInstantiator" />
+  <bean id="metadata-writer.MSWordInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.POIFSContentInstantiator$MSWordContentInstantiator" />
 
-  <bean id="metadata-writer.MSExcelInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.DefaultContentInstantiator$MSExcelContentInstantiator" />
+  <bean id="metadata-writer.MSExcelInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.POIFSContentInstantiator$MSExcelContentInstantiator" />
 
-  <bean id="metadata-writer.MSPowerPointInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.DefaultContentInstantiator$MSPowerPointContentInstantiator" />
+  <bean id="metadata-writer.MSPowerPointInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.POIFSContentInstantiator$MSPowerPointContentInstantiator" />
+
+  <bean id="metadata-writer.MSWordInstantiatorX" class="org.redpill.alfresco.module.metadatawriter.services.impl.Docx4jContentInstantiator$MSWordContentInstantiator" />
+
+  <bean id="metadata-writer.MSExcelInstantiatorX" class="org.redpill.alfresco.module.metadatawriter.services.impl.Docx4jContentInstantiator$MSExcelContentInstantiator" />
+
+  <bean id="metadata-writer.MSPowerPointInstantiatorX" class="org.redpill.alfresco.module.metadatawriter.services.impl.Docx4jContentInstantiator$MSPowerPointContentInstantiator" />
 
   <bean id="metadata-writer.PdfInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.PdfContentInstantiator" />
 
@@ -39,14 +45,16 @@
         <ref bean="metadata-writer.MSWordInstantiator" />
         <ref bean="metadata-writer.MSExcelInstantiator" />
         <ref bean="metadata-writer.MSPowerPointInstantiator" />
+        <ref bean="metadata-writer.MSWordInstantiatorX" />
+        <ref bean="metadata-writer.MSExcelInstantiatorX" />
+        <ref bean="metadata-writer.MSPowerPointInstantiatorX" />
         <ref bean="metadata-writer.PdfInstantiator" />
       </set>
     </constructor-arg>
   </bean>
 
   <!-- The write metadata aspect -->
-  <bean id="metadata-writer.writeMetadataAspect" class="org.redpill.alfresco.module.metadatawriter.aspect.impl.ExportMetadataAspect"
-    init-method="init">
+  <bean id="metadata-writer.writeMetadataAspect" class="org.redpill.alfresco.module.metadatawriter.aspect.impl.ExportMetadataAspect">
     <constructor-arg type="org.redpill.alfresco.module.metadatawriter.factories.MetadataServiceRegistry" ref="metadata-writer.serviceRegistry" />
     <constructor-arg type="org.alfresco.service.cmr.repository.NodeService" ref="nodeService" />
     <constructor-arg type="org.alfresco.service.cmr.dictionary.DictionaryService" ref="dictionaryService" />
@@ -55,8 +63,8 @@
   </bean>
 
   <!-- Metadata service abstract bean -->
-  <bean id="metadata-writer.abstract.service" class="org.redpill.alfresco.module.metadatawriter.services.impl.MetadataServiceImpl"
-    init-method="register" abstract="true">
+  <bean id="metadata-writer.abstract.service" class="org.redpill.alfresco.module.metadatawriter.services.impl.MetadataServiceImpl" init-method="register"
+    abstract="true">
     <constructor-arg type="org.redpill.alfresco.module.metadatawriter.factories.MetadataServiceRegistry" ref="metadata-writer.serviceRegistry" />
     <constructor-arg type="org.redpill.alfresco.module.metadatawriter.factories.MetadataContentFactory" ref="metadata-writer.contentFactory" />
     <constructor-arg type="org.alfresco.service.namespace.NamespaceService" ref="namespaceService" />

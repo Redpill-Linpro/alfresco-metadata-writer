@@ -1,4 +1,4 @@
-package org.redpill.alfresco.module.metadatawriter.services.msoffice.impl;
+package org.redpill.alfresco.module.metadatawriter.services.poifs.impl;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -24,7 +24,7 @@ import org.apache.poi.poifs.filesystem.DocumentInputStream;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade.ContentException;
-import org.redpill.alfresco.module.metadatawriter.services.msoffice.POIFSFacade;
+import org.redpill.alfresco.module.metadatawriter.services.poifs.POIFSFacade;
 
 public class POIFSFacadeImpl implements POIFSFacade {
 

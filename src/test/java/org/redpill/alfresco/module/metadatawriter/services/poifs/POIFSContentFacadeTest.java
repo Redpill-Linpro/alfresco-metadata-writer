@@ -1,4 +1,4 @@
-package org.redpill.alfresco.module.metadatawriter.services.msoffice;
+package org.redpill.alfresco.module.metadatawriter.services.poifs;
 
 import java.io.IOException;
 
@@ -8,16 +8,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade.ContentException;
-import org.redpill.alfresco.module.metadatawriter.services.msoffice.POIFSFacade;
-import org.redpill.alfresco.module.metadatawriter.services.msoffice.impl.MSOfficeFacade;
+import org.redpill.alfresco.module.metadatawriter.services.poifs.POIFSFacade;
+import org.redpill.alfresco.module.metadatawriter.services.poifs.impl.POIFSContentFacade;
 
 
-public class MSOfficeFacadeTest {
+public class POIFSContentFacadeTest {
 	
 	private final Mockery mockery = new Mockery();
 	private final POIFSFacade poifsFacade = mockery.mock(POIFSFacade.class);
 	
-	private MSOfficeFacade facade = new _MSOfficeFacade(poifsFacade);
+	private POIFSContentFacade facade = new _POIFSContentFacade(poifsFacade);
 	
 	//---------------------------------------------------
 	//Setup
@@ -105,9 +105,9 @@ public class MSOfficeFacadeTest {
 	}
 
 
-	private class _MSOfficeFacade extends MSOfficeFacade {
+	private class _POIFSContentFacade extends POIFSContentFacade {
 		
-		public _MSOfficeFacade(POIFSFacade poifsFacade) {
+		public _POIFSContentFacade(POIFSFacade poifsFacade) {
 			super(poifsFacade);
 		}
 		

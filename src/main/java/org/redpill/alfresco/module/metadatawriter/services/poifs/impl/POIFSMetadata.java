@@ -1,37 +1,37 @@
-package org.redpill.alfresco.module.metadatawriter.services.msoffice.impl;
+package org.redpill.alfresco.module.metadatawriter.services.poifs.impl;
 
 import java.io.Serializable;
 import java.util.Date;
 
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade.ContentException;
-import org.redpill.alfresco.module.metadatawriter.services.msoffice.FieldUpdateSpecification;
-import org.redpill.alfresco.module.metadatawriter.services.msoffice.POIFSFacade;
+import org.redpill.alfresco.module.metadatawriter.services.poifs.POIFSFieldUpdateSpecification;
+import org.redpill.alfresco.module.metadatawriter.services.poifs.POIFSFacade;
 
-public enum MSOfficeMetadata {
+public enum POIFSMetadata {
 
-  AUTHOR("Author", new FieldUpdateSpecification() {
+  AUTHOR("Author", new POIFSFieldUpdateSpecification() {
     @Override
     public void update(final String field, final Serializable value, final POIFSFacade facade) throws ContentException {
       facade.setAuthor((String) value);
     }
 
-  }), TITLE("Title", new FieldUpdateSpecification() {
+  }), TITLE("Title", new POIFSFieldUpdateSpecification() {
     @Override
     public void update(final String field, final Serializable value, final POIFSFacade facade) throws ContentException {
       facade.setTitle((String) value);
     }
 
-  }), KEYWORDS("Keywords", new FieldUpdateSpecification() {
+  }), KEYWORDS("Keywords", new POIFSFieldUpdateSpecification() {
     @Override
     public void update(final String field, final Serializable value, final POIFSFacade facade) throws ContentException {
       facade.setKeywords((String) value);
     }
-  }), CREATE_DATETIME("CreateDateTime", new FieldUpdateSpecification() {
+  }), CREATE_DATETIME("CreateDateTime", new POIFSFieldUpdateSpecification() {
     @Override
     public void update(final String field, final Serializable value, final POIFSFacade facade) throws ContentException {
       facade.setCreateDateTime((Date) value);
     }
-  }), CUSTOM("Custom", new FieldUpdateSpecification() {
+  }), CUSTOM("Custom", new POIFSFieldUpdateSpecification() {
     @Override
     public void update(final String field, final Serializable value, final POIFSFacade facade) throws ContentException {
       facade.setCustomMetadata(field, (String) value);
@@ -39,9 +39,9 @@ public enum MSOfficeMetadata {
   });
 
   private final String fieldName;
-  private final FieldUpdateSpecification spec;
+  private final POIFSFieldUpdateSpecification spec;
 
-  private MSOfficeMetadata(final String fieldName, final FieldUpdateSpecification spec) {
+  private POIFSMetadata(final String fieldName, final POIFSFieldUpdateSpecification spec) {
     assert null != fieldName;
     assert null != spec;
 
@@ -62,8 +62,8 @@ public enum MSOfficeMetadata {
 
   }
 
-  static MSOfficeMetadata find(final String field) {
-    for (final MSOfficeMetadata metadataField : MSOfficeMetadata.values()) {
+  static POIFSMetadata find(final String field) {
+    for (final POIFSMetadata metadataField : POIFSMetadata.values()) {
       if (metadataField.correspondsTo(field)) {
         return metadataField;
       }

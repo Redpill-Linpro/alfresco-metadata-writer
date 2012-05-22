@@ -9,7 +9,7 @@ import org.junit.runners.Suite.SuiteClasses;
 		org.redpill.alfresco.module.metadatawriter.aspect.AllTests.class,
 		org.redpill.alfresco.module.metadatawriter.factories.AllTests.class,
 		org.redpill.alfresco.module.metadatawriter.services.AllTests.class,
-		org.redpill.alfresco.module.metadatawriter.services.msoffice.AllTests.class})
+		org.redpill.alfresco.module.metadatawriter.services.poifs.AllTests.class})
 public class AllTests {
 
 }
