@@ -7,9 +7,9 @@ import org.alfresco.service.cmr.repository.ContentReader;
 import org.alfresco.service.cmr.repository.ContentWriter;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataContentInstantiator;
-import org.redpill.alfresco.module.metadatawriter.services.msoffice.impl.MSOfficeFacade;
+import org.redpill.alfresco.module.metadatawriter.services.poifs.impl.POIFSContentFacade;
 
-public class DefaultContentInstantiator {
+public class POIFSContentInstantiator {
 
   // ---------------------------------------------------
   // Public classes
@@ -23,7 +23,7 @@ public class DefaultContentInstantiator {
 
     @Override
     public ContentFacade create(final ContentReader reader, final ContentWriter writer) throws IOException {
-      return new MSOfficeFacade(reader.getContentInputStream(), writer.getContentOutputStream());
+      return new POIFSContentFacade(reader.getContentInputStream(), writer.getContentOutputStream());
     }
   }
 
@@ -36,7 +36,7 @@ public class DefaultContentInstantiator {
 
     @Override
     public ContentFacade create(final ContentReader reader, final ContentWriter writer) throws IOException {
-      return new MSOfficeFacade(reader.getContentInputStream(), writer.getContentOutputStream());
+      return new POIFSContentFacade(reader.getContentInputStream(), writer.getContentOutputStream());
     }
   }
 
@@ -49,7 +49,7 @@ public class DefaultContentInstantiator {
 
     @Override
     public ContentFacade create(final ContentReader reader, final ContentWriter writer) throws IOException {
-      return new MSOfficeFacade(reader.getContentInputStream(), writer.getContentOutputStream());
+      return new POIFSContentFacade(reader.getContentInputStream(), writer.getContentOutputStream());
     }
   }
 

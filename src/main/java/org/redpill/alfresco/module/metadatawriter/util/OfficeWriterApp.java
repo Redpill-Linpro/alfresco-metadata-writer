@@ -10,7 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade.ContentException;
-import org.redpill.alfresco.module.metadatawriter.services.msoffice.impl.MSOfficeFacade;
+import org.redpill.alfresco.module.metadatawriter.services.poifs.impl.POIFSContentFacade;
 
 /**
  * Application used for writing properties to an MS Office document
@@ -44,7 +44,7 @@ public class OfficeWriterApp {
     final InputStream in = new FileInputStream(sourceFile);
     // final OutputStream out = new FileOutputStream(targetFile);
 
-    final MSOfficeFacade facade = new MSOfficeFacade(in, null);
+    final POIFSContentFacade facade = new POIFSContentFacade(in, null);
 
     final Map<String, Serializable> metadata = new LinkedHashMap<String, Serializable>();
 

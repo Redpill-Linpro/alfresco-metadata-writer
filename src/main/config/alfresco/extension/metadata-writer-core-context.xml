@@ -22,11 +22,17 @@
   <bean id="metadata-writer.serviceRegistry" class="org.redpill.alfresco.module.metadatawriter.factories.impl.MetadataServiceRegistryImpl" />
 
   <!-- Factory amd instantiators for content types -->
-  <bean id="metadata-writer.MSWordInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.DefaultContentInstantiator$MSWordContentInstantiator" />
+  <bean id="metadata-writer.MSWordInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.POIFSContentInstantiator$MSWordContentInstantiator" />
 
-  <bean id="metadata-writer.MSExcelInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.DefaultContentInstantiator$MSExcelContentInstantiator" />
+  <bean id="metadata-writer.MSExcelInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.POIFSContentInstantiator$MSExcelContentInstantiator" />
 
-  <bean id="metadata-writer.MSPowerPointInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.DefaultContentInstantiator$MSPowerPointContentInstantiator" />
+  <bean id="metadata-writer.MSPowerPointInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.POIFSContentInstantiator$MSPowerPointContentInstantiator" />
+
+  <bean id="metadata-writer.MSWordInstantiatorX" class="org.redpill.alfresco.module.metadatawriter.services.impl.Docx4jContentInstantiator$MSWordContentInstantiator" />
+
+  <bean id="metadata-writer.MSExcelInstantiatorX" class="org.redpill.alfresco.module.metadatawriter.services.impl.Docx4jContentInstantiator$MSExcelContentInstantiator" />
+
+  <bean id="metadata-writer.MSPowerPointInstantiatorX" class="org.redpill.alfresco.module.metadatawriter.services.impl.Docx4jContentInstantiator$MSPowerPointContentInstantiator" />
 
   <bean id="metadata-writer.PdfInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.PdfContentInstantiator" />
 
@@ -39,6 +45,9 @@
         <ref bean="metadata-writer.MSWordInstantiator" />
         <ref bean="metadata-writer.MSExcelInstantiator" />
         <ref bean="metadata-writer.MSPowerPointInstantiator" />
+        <ref bean="metadata-writer.MSWordInstantiatorX" />
+        <ref bean="metadata-writer.MSExcelInstantiatorX" />
+        <ref bean="metadata-writer.MSPowerPointInstantiatorX" />
         <ref bean="metadata-writer.PdfInstantiator" />
       </set>
     </constructor-arg>

@@ -1,4 +1,4 @@
-package org.redpill.alfresco.module.metadatawriter.services.msoffice;
+package org.redpill.alfresco.module.metadatawriter.services.poifs;
 
 import java.io.IOException;
 import java.util.Date;
