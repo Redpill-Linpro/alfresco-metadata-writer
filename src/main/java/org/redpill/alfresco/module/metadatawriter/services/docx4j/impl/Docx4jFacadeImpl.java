@@ -15,6 +15,7 @@ import org.apache.commons.logging.LogFactory;
 import org.docx4j.docProps.core.CoreProperties;
 import org.docx4j.docProps.core.dc.elements.SimpleLiteral;
 import org.docx4j.docProps.custom.Properties;
+import org.docx4j.docProps.custom.Properties.Property;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.docx4j.openpackaging.io.SaveToZipFile;
 import org.docx4j.openpackaging.packages.OpcPackage;
@@ -65,17 +66,31 @@ public class Docx4jFacadeImpl implements Docx4jFacade {
 
     final Properties customProperties = customPart.getJaxbElement();
 
-    // Ok, let's add one.
-    final org.docx4j.docProps.custom.ObjectFactory factory = new org.docx4j.docProps.custom.ObjectFactory();
-    final org.docx4j.docProps.custom.Properties.Property newProperty = factory.createPropertiesProperty();
+    Property savedProperty = null;
 
-    newProperty.setName(field);
-    newProperty.setFmtid(DocPropsCustomPart.fmtidValLpwstr); // Magic string
-    newProperty.setPid(customProperties.getNextId());
-    newProperty.setLpwstr(value);
+    // first check if the property is already present
+    for (final Property property : customProperties.getProperty()) {
+      if (property.getName().equalsIgnoreCase(field)) {
+        savedProperty = property;
+        break;
+      }
+    }
 
-    // .. add it
-    customProperties.getProperty().add(newProperty);
+    if (savedProperty == null) {
+      // Ok, let's add one.
+      final org.docx4j.docProps.custom.ObjectFactory factory = new org.docx4j.docProps.custom.ObjectFactory();
+      final org.docx4j.docProps.custom.Properties.Property newProperty = factory.createPropertiesProperty();
+
+      newProperty.setName(field);
+      newProperty.setFmtid(DocPropsCustomPart.fmtidValLpwstr); // Magic string
+      newProperty.setPid(customProperties.getNextId());
+      newProperty.setLpwstr(value);
+
+      // .. add it
+      customProperties.getProperty().add(newProperty);
+    } else {
+      savedProperty.setLpwstr(value);
+    }
   }
 
   @Override

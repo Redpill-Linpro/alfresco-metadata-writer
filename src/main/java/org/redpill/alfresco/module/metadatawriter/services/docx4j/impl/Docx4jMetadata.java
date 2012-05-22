@@ -59,7 +59,6 @@ public enum Docx4jMetadata {
     assert null != facade;
 
     spec.update(field, value, facade);
-
   }
 
   static Docx4jMetadata find(final String field) {
