@@ -57,8 +57,6 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
 
   @Override
   public void onUpdateProperties(final NodeRef nodeRef, final Map<QName, Serializable> before, final Map<QName, Serializable> after) {
-    LOG.error(1);
-
     if (!_nodeService.exists(nodeRef)) {
       return;
     }
@@ -77,8 +75,6 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
 
   @Override
   public void afterCreateVersion(final NodeRef versionableNode, final Version version) {
-    LOG.error(2);
-
     if (!_nodeService.exists(versionableNode)) {
       return;
     }
@@ -101,8 +97,6 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
 
   @Override
   public void onAddAspect(final NodeRef nodeRef, final QName aspectTypeQName) {
-    LOG.error(3);
-
     if (!_nodeService.exists(nodeRef)) {
       return;
     }
@@ -165,6 +159,9 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
         } else {
           LOG.error("Could not write properties " + properties + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME), ume);
         }
+      } catch (final Exception ex) {
+        // catch the general error and log it
+        LOG.error("Could not write properties " + properties + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME), ex);
       }
     } else {
       LOG.info("No Metadata service specified for node " + node);

@@ -1,4 +1,4 @@
-package org.redpill.alfresco.module.metadatawriter.services.docx4j.impl;
+package org.redpill.alfresco.module.metadatawriter.services.poix.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,24 +8,24 @@ import java.io.Serializable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
-import org.redpill.alfresco.module.metadatawriter.services.docx4j.Docx4jFacade;
+import org.redpill.alfresco.module.metadatawriter.services.poix.POIXFacade;
 
-public class Docx4jContentFacade implements ContentFacade {
+public class POIXContentFacade implements ContentFacade {
 
-  private static final Log LOG = LogFactory.getLog(Docx4jContentFacade.class);
+  private static final Log LOG = LogFactory.getLog(POIXContentFacade.class);
 
-  private final Docx4jFacade _docx4jFacade;
+  private final POIXFacade _poixFacade;
 
   // ---------------------------------------------------
   // Public constructor
   // ---------------------------------------------------
-  public Docx4jContentFacade(final InputStream in, final OutputStream out) throws IOException {
-    _docx4jFacade = new Docx4jFacadeImpl(in, out);
+  public POIXContentFacade(final InputStream in, final OutputStream out) throws IOException {
+    _poixFacade = new POIXFacadeImpl(in, out);
   }
 
   // For unit testing purposes
-  protected Docx4jContentFacade(final Docx4jFacade docx4jFacade) {
-    _docx4jFacade = docx4jFacade;
+  protected POIXContentFacade(final POIXFacade poixFacade) {
+    _poixFacade = poixFacade;
   }
 
   // ---------------------------------------------------
@@ -38,7 +38,7 @@ public class Docx4jContentFacade implements ContentFacade {
     }
 
     try {
-      _docx4jFacade.writeProperties();
+      _poixFacade.writeProperties();
     } catch (final IOException e) {
       throw new ContentException("Could not save metadata", e);
     }
@@ -47,9 +47,9 @@ public class Docx4jContentFacade implements ContentFacade {
   @Override
   public void abort() throws ContentException {
     try {
-      _docx4jFacade.close();
+      _poixFacade.close();
     } catch (final IOException ioe) {
-      throw new ContentException("Unable to abort the Docx4jFacade!", ioe);
+      throw new ContentException("Unable to abort the POIXFacade!", ioe);
     }
   }
 
@@ -59,10 +59,10 @@ public class Docx4jContentFacade implements ContentFacade {
       LOG.debug("Exporting metadata " + field + " with value " + value);
     }
 
-    final Docx4jMetadata metadata = Docx4jMetadata.find(field);
+    final POIXMetadata metadata = POIXMetadata.find(field);
 
     try {
-      metadata.update(field, value, _docx4jFacade);
+      metadata.update(field, value, _poixFacade);
     } catch (final ContentException e) {
       throw new ContentException("Could not export metadata " + field + " with value " + value, e);
     }
