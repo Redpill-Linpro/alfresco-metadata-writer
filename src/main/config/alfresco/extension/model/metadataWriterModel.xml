@@ -31,6 +31,11 @@
           <type>d:boolean</type>
           <default>true</default>
         </property>
+        <property name="mdw:asynchronous">
+          <title>Set to true if the write should be done asynchronously.</title>
+          <type>d:boolean</type>
+          <default>false</default>
+        </property>
       </properties>
     </aspect>
   </aspects>

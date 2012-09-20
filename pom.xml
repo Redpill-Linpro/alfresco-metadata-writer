@@ -9,7 +9,7 @@
   <artifactId>metadatawriter</artifactId>
   <packaging>jar</packaging>
   <name>Metadata Writer Framework</name>
-  <version>3.4.6.9</version>
+  <version>3.4.10</version>
 
   <dependencies>
     <dependency>
@@ -72,6 +72,13 @@
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>
       <version>1.1.1</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>1.4</version>
       <scope>provided</scope>
     </dependency>
 
