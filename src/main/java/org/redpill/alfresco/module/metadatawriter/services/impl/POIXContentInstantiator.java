@@ -7,9 +7,9 @@ import org.alfresco.service.cmr.repository.ContentReader;
 import org.alfresco.service.cmr.repository.ContentWriter;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataContentInstantiator;
-import org.redpill.alfresco.module.metadatawriter.services.docx4j.impl.Docx4jContentFacade;
+import org.redpill.alfresco.module.metadatawriter.services.poix.impl.POIXContentFacade;
 
-public class Docx4jContentInstantiator {
+public class POIXContentInstantiator {
 
   // ---------------------------------------------------
   // Public classes
@@ -23,7 +23,7 @@ public class Docx4jContentInstantiator {
 
     @Override
     public ContentFacade create(final ContentReader reader, final ContentWriter writer) throws IOException {
-      return new Docx4jContentFacade(reader.getContentInputStream(), writer.getContentOutputStream());
+      return new POIXContentFacade(reader.getContentInputStream(), writer.getContentOutputStream());
     }
   }
 
@@ -36,7 +36,7 @@ public class Docx4jContentInstantiator {
 
     @Override
     public ContentFacade create(final ContentReader reader, final ContentWriter writer) throws IOException {
-      return new Docx4jContentFacade(reader.getContentInputStream(), writer.getContentOutputStream());
+      return new POIXContentFacade(reader.getContentInputStream(), writer.getContentOutputStream());
     }
   }
 
@@ -49,7 +49,7 @@ public class Docx4jContentInstantiator {
 
     @Override
     public ContentFacade create(final ContentReader reader, final ContentWriter writer) throws IOException {
-      return new Docx4jContentFacade(reader.getContentInputStream(), writer.getContentOutputStream());
+      return new POIXContentFacade(reader.getContentInputStream(), writer.getContentOutputStream());
     }
   }
 

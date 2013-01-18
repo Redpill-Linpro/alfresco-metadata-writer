@@ -1,5 +1,24 @@
 package org.redpill.alfresco.module.metadatawriter.services.impl;
 
+import org.alfresco.error.AlfrescoRuntimeException;
+import org.alfresco.model.ContentModel;
+import org.alfresco.repo.policy.BehaviourFilter;
+import org.alfresco.repo.transaction.RetryingTransactionHelper;
+import org.alfresco.service.cmr.repository.NodeRef;
+import org.alfresco.service.namespace.NamespaceException;
+import org.alfresco.service.namespace.NamespaceService;
+import org.alfresco.service.namespace.QName;
+import org.alfresco.service.transaction.TransactionService;
+import org.apache.log4j.Logger;
+import org.redpill.alfresco.module.metadatawriter.converters.ValueConverter;
+import org.redpill.alfresco.module.metadatawriter.factories.MetadataContentFactory;
+import org.redpill.alfresco.module.metadatawriter.factories.MetadataServiceRegistry;
+import org.redpill.alfresco.module.metadatawriter.factories.UnsupportedMimetypeException;
+import org.redpill.alfresco.module.metadatawriter.model.MetadataWriterModel;
+import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
+import org.redpill.alfresco.module.metadatawriter.services.ContentFacade.ContentException;
+import org.redpill.alfresco.module.metadatawriter.services.MetadataService;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
@@ -7,43 +26,32 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import org.alfresco.error.AlfrescoRuntimeException;
-import org.alfresco.service.cmr.repository.NodeRef;
-import org.alfresco.service.namespace.NamespaceException;
-import org.alfresco.service.namespace.NamespaceService;
-import org.alfresco.service.namespace.QName;
-import org.apache.log4j.Logger;
-import org.redpill.alfresco.module.metadatawriter.converters.ValueConverter;
-import org.redpill.alfresco.module.metadatawriter.factories.MetadataContentFactory;
-import org.redpill.alfresco.module.metadatawriter.factories.MetadataServiceRegistry;
-import org.redpill.alfresco.module.metadatawriter.factories.UnsupportedMimetypeException;
-import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
-import org.redpill.alfresco.module.metadatawriter.services.ContentFacade.ContentException;
-import org.redpill.alfresco.module.metadatawriter.services.MetadataService;
-
 public class MetadataServiceImpl implements MetadataService {
 
   private static final Logger LOG = Logger.getLogger(MetadataServiceImpl.class);
 
-  private final Map<QName, String> _metadataMapping;
-  private final MetadataServiceRegistry _registry;
-  private final MetadataContentFactory _metadataContentFactory;
-  private final NamespaceService _namespaceService;
-  private final String _serviceName;
-  private final List<ValueConverter> _converters;
+  private Map<QName, String> _metadataMapping;
+  private MetadataServiceRegistry _registry;
+  private MetadataContentFactory _metadataContentFactory;
+  private NamespaceService _namespaceService;
+  private String _serviceName;
+  private List<ValueConverter> _converters;
+  private TransactionService _transactionService;
+  private BehaviourFilter _behaviourFilter;
 
   // ---------------------------------------------------
   // Public constructor
   // ---------------------------------------------------
   public MetadataServiceImpl(final MetadataServiceRegistry registry, final MetadataContentFactory metadataContentFactory,
-      final NamespaceService namespaceService, final Properties mappings, final String serviceName, final List<ValueConverter> converters) {
+                             final NamespaceService namespaceService, TransactionService transactionService, BehaviourFilter behaviourFilter, final Properties mappings, final String serviceName, final List<ValueConverter> converters) {
     _registry = registry;
     _metadataContentFactory = metadataContentFactory;
     _namespaceService = namespaceService;
+    _transactionService = transactionService;
+    _behaviourFilter = behaviourFilter;
     _serviceName = serviceName;
     _converters = converters;
     _metadataMapping = convertMappings(mappings);
-
   }
 
   // ---------------------------------------------------
@@ -57,50 +65,70 @@ public class MetadataServiceImpl implements MetadataService {
 
   @Override
   public void write(final NodeRef contentRef, final Map<QName, Serializable> properties) throws UpdateMetadataException {
+    RetryingTransactionHelper.RetryingTransactionCallback<Void> callback = new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
 
-    assert contentRef != null;
-    assert properties != null;
+      public Void execute() throws Throwable {
+        // disable the metadata writable aspect, otherwise we'll get an unending update loop
+        _behaviourFilter.disableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
 
-    final ContentFacade content;
-    try {
-      content = _metadataContentFactory.createContent(contentRef);
-    } catch (final IOException ioe) {
-      throw new UpdateMetadataException("Could not create metadata content from node " + contentRef, ioe);
-    } catch (final UnsupportedMimetypeException ume) {
-      throw new UpdateMetadataException("Could not create metadata content for unknown mimetype!", ume);
-    }
+        // disable the auditable aspect in order to prevent the last updated user to be "system"
+        _behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
 
-    // TODO: Determine if properties needs update (any difference between values
-    // in properties and actual metadata)
-    // If they do, update and then write to new node and copy new node to old
-    // node.
+        // we don't want to up the version, so we disable this aspect too
+        _behaviourFilter.disableBehaviour(ContentModel.ASPECT_VERSIONABLE);
 
-    final Map<String, Serializable> propertyMap = createPropertyMap(properties);
+        assert contentRef != null;
+        assert properties != null;
 
-    for (final Map.Entry<String, Serializable> property : propertyMap.entrySet()) {
-
-      final Serializable value = convert(property.getValue());
-
-      try {
-        content.writeMetadata(property.getKey(), value);
-      } catch (final ContentException e) {
-        LOG.warn("Could not export property " + property.getKey() + " with value " + value, e);
-
+        final ContentFacade content;
         try {
-          content.abort();
-        } catch (final ContentException ce) {
-          throw new AlfrescoRuntimeException("Unable to abort the metadata write!", ce);
+          content = _metadataContentFactory.createContent(contentRef);
+        } catch (final IOException ioe) {
+          throw new UpdateMetadataException("Could not create metadata content from node " + contentRef, ioe);
+        } catch (final UnsupportedMimetypeException ume) {
+          throw new UpdateMetadataException("Could not create metadata content for unknown mimetype!", ume);
         }
 
-        return;
-      }
-    }
+        // TODO: Determine if properties needs update (any difference between values
+        // in properties and actual metadata)
+        // If they do, update and then write to new node and copy new node to old
+        // node.
 
-    try {
-      content.save();
-    } catch (final ContentException e) {
-      throw new UpdateMetadataException("Could not save after update!", e);
-    }
+        final Map<String, Serializable> propertyMap = createPropertyMap(properties);
+
+        for (final Map.Entry<String, Serializable> property : propertyMap.entrySet()) {
+
+          final Serializable value = convert(property.getValue());
+
+          try {
+            content.writeMetadata(property.getKey(), value);
+          } catch (final ContentException e) {
+            LOG.warn("Could not export property " + property.getKey() + " with value " + value, e);
+
+            try {
+              content.abort();
+            } catch (final ContentException ce) {
+              throw new AlfrescoRuntimeException("Unable to abort the metadata write!", ce);
+            }
+
+            return null;
+          }
+        }
+
+        try {
+          content.save();
+        } catch (final ContentException e) {
+          throw new UpdateMetadataException("Could not save after update!", e);
+        }
+
+        return null;
+      }
+
+    };
+
+    RetryingTransactionHelper transactionHelper = _transactionService.getRetryingTransactionHelper();
+
+    transactionHelper.doInTransaction(callback, false, true);
   }
 
   public void register() {

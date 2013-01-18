@@ -1,11 +1,11 @@
-package org.redpill.alfresco.module.metadatawriter.services.docx4j;
+package org.redpill.alfresco.module.metadatawriter.services.poix;
 
 import java.io.IOException;
 import java.util.Date;
 
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade.ContentException;
 
-public interface Docx4jFacade {
+public interface POIXFacade {
 
   void writeProperties() throws IOException;
 

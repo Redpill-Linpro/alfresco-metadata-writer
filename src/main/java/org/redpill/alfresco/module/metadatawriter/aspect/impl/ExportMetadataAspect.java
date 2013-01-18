@@ -1,25 +1,27 @@
 package org.redpill.alfresco.module.metadatawriter.aspect.impl;
 
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.node.NodeServicePolicies.OnAddAspectPolicy;
 import org.alfresco.repo.node.NodeServicePolicies.OnUpdatePropertiesPolicy;
 import org.alfresco.repo.policy.Behaviour;
+import org.alfresco.repo.policy.BehaviourFilter;
 import org.alfresco.repo.policy.JavaBehaviour;
 import org.alfresco.repo.policy.PolicyComponent;
+import org.alfresco.repo.security.authentication.AuthenticationUtil;
+import org.alfresco.repo.transaction.AlfrescoTransactionSupport;
+import org.alfresco.repo.transaction.RetryingTransactionHelper;
+import org.alfresco.repo.transaction.TransactionListener;
+import org.alfresco.repo.transaction.TransactionListenerAdapter;
 import org.alfresco.repo.version.VersionServicePolicies.AfterCreateVersionPolicy;
 import org.alfresco.service.cmr.dictionary.DictionaryService;
 import org.alfresco.service.cmr.lock.LockService;
-import org.alfresco.service.cmr.lock.NodeLockedException;
+import org.alfresco.service.cmr.lock.LockStatus;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.cmr.version.Version;
-import org.alfresco.service.namespace.NamespaceService;
 import org.alfresco.service.namespace.QName;
+import org.alfresco.service.transaction.TransactionService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.redpill.alfresco.module.metadatawriter.factories.MetadataServiceRegistry;
@@ -29,37 +31,76 @@ import org.redpill.alfresco.module.metadatawriter.services.MetadataService;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataService.UpdateMetadataException;
 import org.springframework.beans.factory.InitializingBean;
 
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ThreadPoolExecutor;
+
 public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdatePropertiesPolicy, OnAddAspectPolicy, InitializingBean {
 
   private static final Log LOG = LogFactory.getLog(ExportMetadataAspect.class);
 
-  private final PolicyComponent _policyComponent;
+  private PolicyComponent _policyComponent;
 
-  private final NodeService _nodeService;
+  private NodeService _nodeService;
 
-  private final DictionaryService _dictionaryService;
+  private DictionaryService _dictionaryService;
 
-  private final LockService _lockService;
+  private LockService _lockService;
 
-  private final MetadataServiceRegistry _metadataServiceRegistry;
+  private MetadataServiceRegistry _metadataServiceRegistry;
 
-  // ---------------------------------------------------
-  // Public constructor
-  // ---------------------------------------------------
-  public ExportMetadataAspect(final MetadataServiceRegistry metadataServiceRegistry, final NodeService nodeService,
-      final DictionaryService dictionaryService, final PolicyComponent policyComponent, final LockService lockService) {
-    _metadataServiceRegistry = metadataServiceRegistry;
-    _nodeService = nodeService;
-    _dictionaryService = dictionaryService;
+  private ThreadPoolExecutor _threadPoolExecutor;
+
+  private TransactionListener _transactionListener;
+
+  private TransactionService _transactionService;
+
+  private BehaviourFilter _behaviourFilter;
+
+  private static final Object KEY_NODE_REF = ExportMetadataAspect.class.getName() + ".nodeRef";
+
+  private static final Object KEY_PROPERTIES = ExportMetadataAspect.class.getName() + ".properties";
+
+  public void setThreadPoolExecutor(ThreadPoolExecutor threadPoolExecutor) {
+    _threadPoolExecutor = threadPoolExecutor;
+  }
+
+  public void setTransactionService(TransactionService transactionService) {
+    _transactionService = transactionService;
+  }
+
+  public void setPolicyComponent(PolicyComponent policyComponent) {
     _policyComponent = policyComponent;
+  }
+
+  public void setNodeService(NodeService nodeService) {
+    _nodeService = nodeService;
+  }
+
+  public void setDictionaryService(DictionaryService dictionaryService) {
+    _dictionaryService = dictionaryService;
+  }
+
+  public void setLockService(LockService lockService) {
     _lockService = lockService;
+  }
+
+  public void setMetadataServiceRegistry(MetadataServiceRegistry metadataServiceRegistry) {
+    _metadataServiceRegistry = metadataServiceRegistry;
+  }
+
+  public void setBehaviourFilter(BehaviourFilter behaviourFilter) {
+    _behaviourFilter = behaviourFilter;
   }
 
   @Override
   public void onUpdateProperties(final NodeRef nodeRef, final Map<QName, Serializable> before, final Map<QName, Serializable> after) {
-    LOG.error(1);
-
     if (!_nodeService.exists(nodeRef)) {
+      return;
+    }
+
+    if (_lockService.getLockStatus(nodeRef) != LockStatus.NO_LOCK) {
       return;
     }
 
@@ -77,9 +118,11 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
 
   @Override
   public void afterCreateVersion(final NodeRef versionableNode, final Version version) {
-    LOG.error(2);
-
     if (!_nodeService.exists(versionableNode)) {
+      return;
+    }
+
+    if (_lockService.getLockStatus(versionableNode) != LockStatus.NO_LOCK) {
       return;
     }
 
@@ -101,9 +144,11 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
 
   @Override
   public void onAddAspect(final NodeRef nodeRef, final QName aspectTypeQName) {
-    LOG.error(3);
-
     if (!_nodeService.exists(nodeRef)) {
+      return;
+    }
+
+    if (_lockService.getLockStatus(nodeRef) != LockStatus.NO_LOCK) {
       return;
     }
 
@@ -128,6 +173,14 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
   }
 
   private void updateProperties(final NodeRef node, final Map<QName, Serializable> properties) {
+    AlfrescoTransactionSupport.bindListener(_transactionListener);
+
+    AlfrescoTransactionSupport.bindResource(KEY_NODE_REF, node);
+
+    AlfrescoTransactionSupport.bindResource(KEY_PROPERTIES, properties);
+  }
+
+  private void doUpdateProperties(NodeRef node, Map<QName, Serializable> properties) {
     final String serviceName = (String) _nodeService.getProperty(node, MetadataWriterModel.PROP_METADATA_SERVICE_NAME);
 
     final Serializable failOnUnsupportedValue = _nodeService.getProperty(node, MetadataWriterModel.PROP_METADATA_FAIL_ON_UNSUPPORTED);
@@ -138,13 +191,7 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
       failOnUnsupported = (Boolean) failOnUnsupportedValue;
     }
 
-    try {
-      _lockService.checkForLock(node);
-    } catch (final NodeLockedException e) {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Node Locked! Metadata could not be exported for node " + node);
-      }
-
+    if (_lockService.getLockStatus(node) != LockStatus.NO_LOCK) {
       return;
     }
 
@@ -155,16 +202,22 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
     } else if (null != serviceName) {
       try {
         final MetadataService s = _metadataServiceRegistry.findService(serviceName);
+
+        _behaviourFilter.disableAllBehaviours();
+
         s.write(node, properties);
       } catch (final UnknownServiceNameException e) {
         LOG.warn("Could not find Metadata service named " + serviceName, e);
       } catch (final UpdateMetadataException ume) {
         if (failOnUnsupported) {
           throw new AlfrescoRuntimeException("Could not write properties " + properties + " to node "
-              + _nodeService.getProperty(node, ContentModel.PROP_NAME), ume);
+                  + _nodeService.getProperty(node, ContentModel.PROP_NAME), ume);
         } else {
           LOG.error("Could not write properties " + properties + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME), ume);
         }
+      } catch (final Exception ex) {
+        // catch the general error and log it
+        LOG.error("Could not write properties " + properties + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME), ex);
       }
     } else {
       LOG.info("No Metadata service specified for node " + node);
@@ -174,14 +227,74 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
   @Override
   public void afterPropertiesSet() throws Exception {
     _policyComponent.bindClassBehaviour(OnUpdatePropertiesPolicy.QNAME, MetadataWriterModel.ASPECT_METADATA_WRITEABLE, new JavaBehaviour(this,
-        "onUpdateProperties", Behaviour.NotificationFrequency.TRANSACTION_COMMIT));
-
-    _policyComponent.bindClassBehaviour(QName.createQName(NamespaceService.ALFRESCO_URI, "afterCreateVersion"),
-        MetadataWriterModel.ASPECT_METADATA_WRITEABLE, new JavaBehaviour(this, "afterCreateVersion",
-            Behaviour.NotificationFrequency.TRANSACTION_COMMIT));
+            "onUpdateProperties", Behaviour.NotificationFrequency.TRANSACTION_COMMIT));
 
     _policyComponent.bindClassBehaviour(OnAddAspectPolicy.QNAME, MetadataWriterModel.ASPECT_METADATA_WRITEABLE, new JavaBehaviour(this,
-        "onAddAspect", Behaviour.NotificationFrequency.TRANSACTION_COMMIT));
+            "onAddAspect", Behaviour.NotificationFrequency.TRANSACTION_COMMIT));
+
+    // set up the transaction listener
+    _transactionListener = new MetadataWriterTransactionListener();
+  }
+
+  private class MetadataWriterTransactionListener extends TransactionListenerAdapter {
+
+    @Override
+    public void afterCommit() {
+      NodeRef nodeRef = AlfrescoTransactionSupport.getResource(KEY_NODE_REF);
+
+      Map<QName, Serializable> properties = AlfrescoTransactionSupport.getResource(KEY_PROPERTIES);
+
+      Runnable runnable = new MetadataWriterUpdater(nodeRef, properties);
+
+      _threadPoolExecutor.execute(runnable);
+    }
+  }
+
+  private class MetadataWriterUpdater implements Runnable {
+
+    private NodeRef _nodeRef;
+
+    private Map<QName, Serializable> _properties;
+
+    public MetadataWriterUpdater(NodeRef nodeRef, Map<QName, Serializable> properties) {
+      _nodeRef = nodeRef;
+
+      _properties = properties;
+    }
+
+    @Override
+    public void run() {
+      AuthenticationUtil.runAs(new AuthenticationUtil.RunAsWork<String>() {
+
+        public String doWork() throws Exception {
+          RetryingTransactionHelper.RetryingTransactionCallback<Void> callback = new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
+
+            public Void execute() throws Throwable {
+              doUpdateProperties(_nodeRef, _properties);
+
+              return null;
+            }
+
+          };
+
+          try {
+            RetryingTransactionHelper txnHelper = _transactionService.getRetryingTransactionHelper();
+
+            txnHelper.doInTransaction(callback, false, true);
+
+            if (LOG.isDebugEnabled()) {
+              LOG.debug("Successfully wrote metadata properties on node: " + _nodeRef);
+            }
+          } catch (Exception ex) {
+            LOG.error("Failed to write metadata properties to node: " + _nodeRef, ex);
+          }
+
+          return "";
+        }
+
+      }, AuthenticationUtil.getSystemUserName());
+    }
   }
 
 }
+

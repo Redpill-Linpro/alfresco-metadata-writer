@@ -1,23 +1,9 @@
 package org.redpill.alfresco.module.metadatawriter.services.poifs.impl;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
-import java.util.Date;
-
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.poi.hpsf.CustomProperties;
-import org.apache.poi.hpsf.DocumentSummaryInformation;
-import org.apache.poi.hpsf.MarkUnsupportedException;
-import org.apache.poi.hpsf.NoPropertySetStreamException;
-import org.apache.poi.hpsf.PropertySet;
-import org.apache.poi.hpsf.PropertySetFactory;
-import org.apache.poi.hpsf.SummaryInformation;
-import org.apache.poi.hpsf.UnexpectedPropertySetTypeException;
-import org.apache.poi.hpsf.WritingNotSupportedException;
+import org.apache.poi.hpsf.*;
 import org.apache.poi.poifs.filesystem.DirectoryEntry;
 import org.apache.poi.poifs.filesystem.DocumentEntry;
 import org.apache.poi.poifs.filesystem.DocumentInputStream;
@@ -25,6 +11,9 @@ import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade.ContentException;
 import org.redpill.alfresco.module.metadatawriter.services.poifs.POIFSFacade;
+
+import java.io.*;
+import java.util.Date;
 
 public class POIFSFacadeImpl implements POIFSFacade {
 
@@ -110,24 +99,14 @@ public class POIFSFacadeImpl implements POIFSFacade {
     try {
       fileSystem.writeFilesystem(out);
     } finally {
-      closeStreams();
+      IOUtils.closeQuietly(in);
+      IOUtils.closeQuietly(out);
     }
   }
 
   public void close() throws IOException {
-    closeStreams();
-  }
-
-  // ---------------------------------------------------
-  // Private methods
-  // ---------------------------------------------------
-
-  private void closeStreams() throws IOException {
-    try {
-      out.close();
-    } finally {
-      in.close();
-    }
+    IOUtils.closeQuietly(out);
+    IOUtils.closeQuietly(in);
   }
 
   /*

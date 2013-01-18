@@ -55,8 +55,12 @@ public class ExportMetadataAspectTest {
   @Before
   public void setUp() throws Exception {
     properties.clear();
-    aspect = new ExportMetadataAspect(serviceRegistry, nodeService, dictionaryService, policyComponent, lockService);
-
+    aspect = new ExportMetadataAspect();
+    aspect.setDictionaryService(dictionaryService);
+    aspect.setLockService(lockService);
+    aspect.setMetadataServiceRegistry(serviceRegistry);
+    aspect.setNodeService(nodeService);
+    aspect.setPolicyComponent(policyComponent);
   }
 
   @After
