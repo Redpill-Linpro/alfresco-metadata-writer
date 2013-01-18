@@ -173,16 +173,6 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
   }
 
   private void updateProperties(final NodeRef node, final Map<QName, Serializable> properties) {
-    final Boolean asynchronously = (Boolean) _nodeService.getProperty(node, MetadataWriterModel.PROP_METADATA_ASYNCHRONOUSLY);
-
-    if (asynchronously) {
-      doAsynchronously(node, properties);
-    } else {
-      doUpdateProperties(node, properties);
-    }
-  }
-
-  private void doAsynchronously(NodeRef node, Map<QName, Serializable> properties) {
     AlfrescoTransactionSupport.bindListener(_transactionListener);
 
     AlfrescoTransactionSupport.bindResource(KEY_NODE_REF, node);
@@ -213,14 +203,7 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
       try {
         final MetadataService s = _metadataServiceRegistry.findService(serviceName);
 
-        // disable the metadata writable aspect, otherwise we'll get an unending update loop
-        _behaviourFilter.disableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
-
-        // disable the auditable aspect in order to prevent the last updated user to be "system"
-        _behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
-
-        // we don't want to up the version, so we disable this aspect too
-        _behaviourFilter.disableBehaviour(ContentModel.ASPECT_VERSIONABLE);
+        _behaviourFilter.disableAllBehaviours();
 
         s.write(node, properties);
       } catch (final UnknownServiceNameException e) {

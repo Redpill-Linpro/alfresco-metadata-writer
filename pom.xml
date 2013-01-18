@@ -9,7 +9,7 @@
   <artifactId>metadatawriter</artifactId>
   <packaging>jar</packaging>
   <name>Metadata Writer Framework</name>
-  <version>3.4.10</version>
+  <version>3.4.11</version>
 
   <dependencies>
     <dependency>
@@ -100,13 +100,6 @@
       <groupId>org.apache.pdfbox</groupId>
       <artifactId>pdfbox</artifactId>
       <version>1.5.0</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>1.4</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
