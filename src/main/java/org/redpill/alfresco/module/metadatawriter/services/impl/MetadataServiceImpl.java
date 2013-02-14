@@ -1,7 +1,13 @@
 package org.redpill.alfresco.module.metadatawriter.services.impl;
 
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
 import org.alfresco.error.AlfrescoRuntimeException;
-import org.alfresco.model.ContentModel;
 import org.alfresco.repo.policy.BehaviourFilter;
 import org.alfresco.repo.transaction.RetryingTransactionHelper;
 import org.alfresco.service.cmr.repository.NodeRef;
@@ -14,17 +20,9 @@ import org.redpill.alfresco.module.metadatawriter.converters.ValueConverter;
 import org.redpill.alfresco.module.metadatawriter.factories.MetadataContentFactory;
 import org.redpill.alfresco.module.metadatawriter.factories.MetadataServiceRegistry;
 import org.redpill.alfresco.module.metadatawriter.factories.UnsupportedMimetypeException;
-import org.redpill.alfresco.module.metadatawriter.model.MetadataWriterModel;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade.ContentException;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataService;
-
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 
 public class MetadataServiceImpl implements MetadataService {
 
@@ -68,15 +66,14 @@ public class MetadataServiceImpl implements MetadataService {
     RetryingTransactionHelper.RetryingTransactionCallback<Void> callback = new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
 
       public Void execute() throws Throwable {
-        // disable the metadata writable aspect, otherwise we'll get an unending update loop
-        _behaviourFilter.disableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
 
-        // disable the auditable aspect in order to prevent the last updated user to be "system"
-        _behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
-
-        // we don't want to up the version, so we disable this aspect too
-        _behaviourFilter.disableBehaviour(ContentModel.ASPECT_VERSIONABLE);
-
+    	  /*
+    	   * Change 130214 Carl Nordenfelt: Needed to disable all behaviours since versioning was
+    	   * triggered for the VERSIONABLE_ASPECT behaviour even though it was disabled. Otherwise
+    	   * a new version is created when the updated content is written (and cm:autoVersion == true)
+    	   */
+    	_behaviourFilter.disableAllBehaviours();  
+    	  
         assert contentRef != null;
         assert properties != null;
 
@@ -88,11 +85,6 @@ public class MetadataServiceImpl implements MetadataService {
         } catch (final UnsupportedMimetypeException ume) {
           throw new UpdateMetadataException("Could not create metadata content for unknown mimetype!", ume);
         }
-
-        // TODO: Determine if properties needs update (any difference between values
-        // in properties and actual metadata)
-        // If they do, update and then write to new node and copy new node to old
-        // node.
 
         final Map<String, Serializable> propertyMap = createPropertyMap(properties);
 
