@@ -1,5 +1,6 @@
 package org.redpill.alfresco.module.metadatawriter.services.pdfbox.impl;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -10,24 +11,28 @@ import java.util.Date;
 import org.apache.commons.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
+import org.redpill.alfresco.module.metadatawriter.util.CopyInputStream;
 
 public class PdfboxFacade implements ContentFacade {
 
-  private final InputStream _inputStream;
-
+  private final CopyInputStream _inputStream;
+  
   private final OutputStream _outputStream;
 
   private final PDDocument _document;
 
   public PdfboxFacade(final InputStream inputStream, final OutputStream outputStream) {
-    _inputStream = inputStream;
-
+    _inputStream = new CopyInputStream(inputStream);
+     
     _outputStream = outputStream;
 
     try {
-      _document = PDDocument.load(_inputStream);
+      _document = PDDocument.load(_inputStream.getCopy());
+      
     } catch (final IOException ex) {
       throw new RuntimeException(ex);
+    } finally {
+      IOUtils.closeQuietly(inputStream);
     }
   }
 
@@ -40,19 +45,28 @@ public class PdfboxFacade implements ContentFacade {
 
   @Override
   public void save() throws ContentException {
+    InputStream localInputStream = null;
     try {
-      _document.save(_outputStream);
+      //Only save changes if the document is not encrypted, otherwise the document will be corrupted.
+      if (!_document.isEncrypted()) {
+        _document.save(_outputStream); 
+      } else {
+        //Just copy the input stream to the output stream. With no changes done.
+        localInputStream = _inputStream.getCopy();
+        IOUtils.copyLarge(localInputStream, _outputStream); 
+      }
+
     } catch (final Exception ex) {
       throw new RuntimeException(ex);
     } finally {
-      IOUtils.closeQuietly(_inputStream);
+      IOUtils.closeQuietly(localInputStream);
       IOUtils.closeQuietly(_outputStream);
     }
   }
 
   @Override
   public void abort() throws ContentException {
-    IOUtils.closeQuietly(_inputStream);
+    //IOUtils.closeQuietly(_inputStream);
     IOUtils.closeQuietly(_outputStream);
   }
 
