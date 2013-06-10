@@ -19,6 +19,9 @@ import org.alfresco.repo.transaction.TransactionListener;
 import org.alfresco.repo.transaction.TransactionListenerAdapter;
 import org.alfresco.repo.version.VersionServicePolicies.AfterCreateVersionPolicy;
 import org.alfresco.service.cmr.dictionary.DictionaryService;
+import org.alfresco.service.cmr.lock.LockService;
+import org.alfresco.service.cmr.lock.LockStatus;
+import org.alfresco.service.cmr.lock.LockType;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.cmr.version.Version;
@@ -33,6 +36,7 @@ import org.redpill.alfresco.module.metadatawriter.model.MetadataWriterModel;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataService;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataService.UpdateMetadataException;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.StringUtils;
 
 public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdatePropertiesPolicy, OnAddAspectPolicy, InitializingBean {
 
@@ -54,7 +58,13 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
 
   private BehaviourFilter _behaviourFilter;
 
+  private LockService _lockService;
+
   private static final Object KEY_NODE_REF = ExportMetadataAspect.class.getName() + ".nodeRef";
+
+  public void setLockService(LockService lockService) {
+    _lockService = lockService;
+  }
 
   public void setThreadPoolExecutor(ThreadPoolExecutor threadPoolExecutor) {
     _threadPoolExecutor = threadPoolExecutor;
@@ -185,46 +195,54 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
 
     // Check for locks has been removed as it won't work with vti edit-online
     // (locked document is updated)
-    /*
-     * if (LockStatus.LOCKED.equals(_lockService.getLockStatus(node))) { if
-     * (LOG.isDebugEnabled()) { LOG.debug("Node " + node +
-     * " ignored (locked with status " + _lockService.getLockStatus(node) +
-     * ")"); } return; }
-     */
+    LockStatus lockStatus = _lockService.getLockStatus(node);
+    LockType lockType = _lockService.getLockType(node);
+
+    if ((LockStatus.LOCKED.equals(lockStatus) || LockStatus.LOCK_OWNER.equals(lockStatus)) && !LockType.WRITE_LOCK.equals(lockType)) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Node " + node + " ignored (locked with status " + _lockService.getLockStatus(node) + " and type " + lockType + ")");
+      }
+
+      return;
+    }
 
     if (_dictionaryService.isSubClass(_nodeService.getType(node), ContentModel.TYPE_FOLDER)) {
       if (LOG.isDebugEnabled()) {
         LOG.debug("Node " + node + " ignored (" + _nodeService.getType(node) + " is a folder-type)");
       }
+
       return;
     }
 
-    if (null != serviceName) {
-      try {
-        final MetadataService s = _metadataServiceRegistry.findService(serviceName);
-
-        _behaviourFilter.disableAllBehaviours();
-
-        s.write(node, _nodeService.getProperties(node));
-
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Successfully wrote metadata properties on node: " + node);
-        }
-
-      } catch (final UnknownServiceNameException e) {
-        LOG.warn("Could not find Metadata service named " + serviceName, e);
-      } catch (final UpdateMetadataException ume) {
-        if (failOnUnsupported) {
-          throw new AlfrescoRuntimeException("Could not write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME), ume);
-        } else {
-          LOG.error("Could not write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME), ume);
-        }
-      } catch (final Exception ex) {
-        // catch the general error and log it
-        LOG.error("Could not write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME), ex);
+    if (!StringUtils.hasText(serviceName)) {
+      if (LOG.isInfoEnabled()) {
+        LOG.info("No Metadata service specified for node " + node);
       }
-    } else {
-      LOG.info("No Metadata service specified for node " + node);
+
+      return;
+    }
+
+    try {
+      final MetadataService s = _metadataServiceRegistry.findService(serviceName);
+
+      _behaviourFilter.disableAllBehaviours();
+
+      s.write(node, _nodeService.getProperties(node));
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Successfully wrote metadata properties on node: " + node);
+      }
+    } catch (final UnknownServiceNameException e) {
+      LOG.warn("Could not find Metadata service named " + serviceName, e);
+    } catch (final UpdateMetadataException ume) {
+      if (failOnUnsupported) {
+        throw new AlfrescoRuntimeException("Could not write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME), ume);
+      } else {
+        LOG.error("Could not write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME), ume);
+      }
+    } catch (final Exception ex) {
+      // catch the general error and log it
+      LOG.error("Could not write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME), ex);
     }
   }
 
@@ -238,9 +256,7 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
   // TODO: Should add black list of properties ignored in comparison to avoid
   // unnecessary updates
   private boolean propertiesUpdatedRequireExport(final Map<QName, Serializable> before, final Map<QName, Serializable> after) {
-
     return !before.equals(after);
-
   }
 
   private class MetadataWriterTransactionListener extends TransactionListenerAdapter {

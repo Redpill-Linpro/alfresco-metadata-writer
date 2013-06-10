@@ -55,9 +55,16 @@
   </bean>
 
   <!-- The write metadata aspect -->
-  <bean id="metadata-writer.writeMetadataAspect" class="org.redpill.alfresco.module.metadatawriter.aspect.impl.ExportMetadataAspect" p:dictionaryService-ref="DictionaryService" p:nodeService-ref="NodeService"
-    p:policyComponent-ref="policyComponent" p:metadataServiceRegistry-ref="metadata-writer.serviceRegistry" p:transactionService-ref="TransactionService" p:threadPoolExecutor-ref="metadata-writer.threadPoolExecutor"
-    p:behaviourFilter-ref="policyBehaviourFilter" />
+  <bean id="metadata-writer.writeMetadataAspect" class="org.redpill.alfresco.module.metadatawriter.aspect.impl.ExportMetadataAspect">
+    <property name="metadataServiceRegistry" ref="metadata-writer.serviceRegistry" />
+    <property name="nodeService" ref="NodeService" />
+    <property name="dictionaryService" ref="DictionaryService" />
+    <property name="transactionService" ref="TransactionService" />
+    <property name="threadPoolExecutor" ref="metadata-writer.threadPoolExecutor" />
+    <property name="policyComponent" ref="policyComponent" />
+    <property name="behaviourFilter" ref="policyBehaviourFilter" />
+    <property name="lockService" ref="LockService" />
+  </bean>
 
   <!-- Metadata service abstract bean -->
   <bean id="metadata-writer.abstract.service" class="org.redpill.alfresco.module.metadatawriter.services.impl.MetadataServiceImpl" init-method="register" abstract="true">
