@@ -1,6 +1,5 @@
 package org.redpill.alfresco.module.metadatawriter.services.pdfbox.impl;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -16,19 +15,19 @@ import org.redpill.alfresco.module.metadatawriter.util.CopyInputStream;
 public class PdfboxFacade implements ContentFacade {
 
   private final CopyInputStream _inputStream;
-  
+
   private final OutputStream _outputStream;
 
   private final PDDocument _document;
 
   public PdfboxFacade(final InputStream inputStream, final OutputStream outputStream) {
     _inputStream = new CopyInputStream(inputStream);
-     
+
     _outputStream = outputStream;
 
     try {
       _document = PDDocument.load(_inputStream.getCopy());
-      
+
     } catch (final IOException ex) {
       throw new RuntimeException(ex);
     } finally {
@@ -47,13 +46,15 @@ public class PdfboxFacade implements ContentFacade {
   public void save() throws ContentException {
     InputStream localInputStream = null;
     try {
-      //Only save changes if the document is not encrypted, otherwise the document will be corrupted.
+      // Only save changes if the document is not encrypted, otherwise the
+      // document will be corrupted.
       if (!_document.isEncrypted()) {
-        _document.save(_outputStream); 
+        _document.save(_outputStream);
       } else {
-        //Just copy the input stream to the output stream. With no changes done.
+        // Just copy the input stream to the output stream. With no changes
+        // done.
         localInputStream = _inputStream.getCopy();
-        IOUtils.copyLarge(localInputStream, _outputStream); 
+        IOUtils.copyLarge(localInputStream, _outputStream);
       }
 
     } catch (final Exception ex) {
@@ -66,7 +67,7 @@ public class PdfboxFacade implements ContentFacade {
 
   @Override
   public void abort() throws ContentException {
-    //IOUtils.closeQuietly(_inputStream);
+    // IOUtils.closeQuietly(_inputStream);
     IOUtils.closeQuietly(_outputStream);
   }
 
