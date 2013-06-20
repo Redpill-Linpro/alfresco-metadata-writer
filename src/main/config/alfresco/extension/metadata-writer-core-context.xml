@@ -76,7 +76,12 @@
   </bean>
 
   <!-- Creates a thread pool executer with a very low priority. This is to assure that threads that takes a very long time will not interfere too much -->
-  <bean id="metadata-writer.threadPoolExecutor" class="org.alfresco.util.ThreadPoolExecutorFactoryBean" p:poolName="metadata-writer.ThreadPool" p:corePoolSize="10" p:maximumPoolSize="20"
-    p:threadPriority="1" />
+  <bean id="metadata-writer.threadPoolExecutor" class="org.redpill.alfresco.module.metadatawriter.util.ThreadPoolExecutorFactoryBean">
+    <property name="poolName" value="metadata-writer.ThreadPool" />
+    <property name="corePoolSize" value="1" />
+    <property name="maximumPoolSize" value="2" />
+    <property name="threadPriority" value="1" />
+    <property name="timeout" value="10" />
+  </bean>
 
 </beans>

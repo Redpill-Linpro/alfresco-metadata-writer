@@ -122,7 +122,6 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
    */
   @Override
   public void afterCreateVersion(final NodeRef versionableNode, final Version version) {
-
     if (LOG.isDebugEnabled()) {
       LOG.debug("afterCreateVersion " + version.getVersionLabel() + " for node " + versionableNode);
     }
@@ -139,7 +138,6 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
 
   @Override
   public void onAddAspect(final NodeRef nodeRef, final QName aspectTypeQName) {
-
     if (LOG.isDebugEnabled()) {
       LOG.debug("onAddAspect " + aspectTypeQName.toPrefixString() + " for node " + nodeRef);
     }
@@ -236,13 +234,14 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
       LOG.warn("Could not find Metadata service named " + serviceName, e);
     } catch (final UpdateMetadataException ume) {
       if (failOnUnsupported) {
-        throw new AlfrescoRuntimeException("Could not write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME), ume);
+        throw new AlfrescoRuntimeException("Could not write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME) + "( " + node + ")",
+            ume);
       } else {
-        LOG.error("Could not write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME), ume);
+        LOG.error("Could not write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME) + " (" + node + ")", ume);
       }
     } catch (final Exception ex) {
       // catch the general error and log it
-      LOG.error("Could not write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME), ex);
+      LOG.error("Could not write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME) + " (" + node + ")", ex);
     }
   }
 
@@ -305,7 +304,6 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
             RetryingTransactionHelper txnHelper = _transactionService.getRetryingTransactionHelper();
 
             txnHelper.doInTransaction(callback, false, true);
-
           } catch (Exception ex) {
             LOG.error("Failed to write metadata properties to node: " + _nodeRef, ex);
           }
