@@ -9,7 +9,7 @@
   <artifactId>metadatawriter</artifactId>
   <packaging>jar</packaging>
   <name>Metadata Writer Framework</name>
-  <version>3.4.13</version>
+  <version>3.4.14</version>
 
   <dependencies>
     <dependency>
