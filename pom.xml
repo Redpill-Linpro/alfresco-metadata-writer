@@ -9,7 +9,7 @@
   <artifactId>metadatawriter</artifactId>
   <packaging>jar</packaging>
   <name>Metadata Writer Framework</name>
-  <version>3.4.14</version>
+  <version>4.1.5</version>
 
   <dependencies>
     <dependency>
@@ -40,33 +40,64 @@
       <scope>provided</scope>
     </dependency>
 
+  <!-- dependency for community version
     <dependency>
       <groupId>org.alfresco</groupId>
       <artifactId>alfresco-datamodel</artifactId>
-      <version>3.4.e</version>
-      <scope>provided</scope>
+        <version>4.0.b</version>
+        <classifier>community</classifier>
     </dependency>
 
     <dependency>
       <groupId>org.alfresco</groupId>
       <artifactId>alfresco-repository</artifactId>
-      <version>3.4.e</version>
-      <scope>provided</scope>
+        <version>4.0.b</version>
+        <classifier>community</classifier>
     </dependency>
 
     <dependency>
       <groupId>org.alfresco</groupId>
       <artifactId>alfresco-core</artifactId>
-      <version>3.4.e</version>
-      <scope>provided</scope>
+        <version>4.0.b</version>
+        <classifier>community</classifier>
     </dependency>
 
     <dependency>
       <groupId>org.alfresco</groupId>
       <artifactId>alfresco-web-client</artifactId>
-      <version>3.4.e</version>
-      <scope>provided</scope>
+        <version>4.0.b</version>
+        <classifier>community</classifier>
     </dependency>
+  -->
+
+   <!-- dependency for enterprise version 4.1.5   -->
+      <dependency>
+          <groupId>org.alfresco.enterprise</groupId>
+          <artifactId>alfresco-data-model</artifactId>
+          <version>4.1.5</version>
+      </dependency>
+
+      <dependency>
+          <groupId>org.alfresco.enterprise</groupId>
+          <artifactId>alfresco-repository</artifactId>
+          <version>4.1.5</version>
+          <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+          <groupId>org.alfresco.enterprise</groupId>
+          <artifactId>alfresco-core</artifactId>
+          <version>4.1.5</version>
+          <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+          <groupId>org.alfresco.enterprise</groupId>
+          <artifactId>alfresco-web-client</artifactId>
+          <version>4.1.5</version>
+          <scope>provided</scope>
+      </dependency>
+
 
     <dependency>
       <groupId>commons-logging</groupId>

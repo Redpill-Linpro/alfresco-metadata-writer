@@ -55,7 +55,6 @@ public class ExportMetadataAspectTest {
   public void setUp() throws Exception {
     properties.clear();
     aspect = new ExportMetadataAspect();
-    aspect.setDictionaryService(dictionaryService);
     aspect.setMetadataServiceRegistry(serviceRegistry);
     aspect.setNodeService(nodeService);
     aspect.setPolicyComponent(policyComponent);
@@ -243,7 +242,7 @@ public class ExportMetadataAspectTest {
   private void expectNeverExportProperties() throws UpdateMetadataException {
     mockery.checking(new Expectations() {
       {
-        never(service).write(with(any(NodeRef.class)), with(any(Map.class)));
+        never(service).write(with(any(NodeRef.class)));
       }
     });
   }
@@ -260,7 +259,7 @@ public class ExportMetadataAspectTest {
 
     mockery.checking(new Expectations() {
       {
-        oneOf(service).write(contentRef, properties);
+        oneOf(service).write(contentRef);
       }
     });
   }

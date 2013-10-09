@@ -2,6 +2,7 @@ package org.redpill.alfresco.module.metadatawriter.services;
 
 import org.alfresco.repo.policy.BehaviourFilter;
 import org.alfresco.service.cmr.repository.NodeRef;
+import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.namespace.NamespaceService;
 import org.alfresco.service.namespace.QName;
 import org.alfresco.service.transaction.TransactionService;
@@ -35,6 +36,7 @@ public class MetadataServiceTest {
   private NamespaceService namespaceService = mockery.mock(NamespaceService.class);
   private TransactionService transactionService = null;
   private BehaviourFilter behaviourFilter = mockery.mock(BehaviourFilter.class);
+  private NodeService nodeService = mockery.mock(NodeService.class);
 
   private NodeRef contentRef = new NodeRef(":///content");
 
@@ -202,11 +204,11 @@ public class MetadataServiceTest {
   }
 
   private MetadataServiceImpl createService() {
-    return new MetadataServiceImpl(registry, contentFactory, namespaceService, transactionService, behaviourFilter, metadataMapping, SERVICE_NAME, converters);
+    return new MetadataServiceImpl(registry, contentFactory, namespaceService, transactionService, behaviourFilter, metadataMapping, SERVICE_NAME, converters, nodeService);
   }
 
   private void startTest(MetadataServiceImpl service) throws UpdateMetadataException {
-    service.write(contentRef, properties);
+    service.write(contentRef);
   }
 
   private void addPropertyAndMapping(String key, String value) {

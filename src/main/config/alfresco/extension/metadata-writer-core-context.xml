@@ -58,12 +58,7 @@
   <bean id="metadata-writer.writeMetadataAspect" class="org.redpill.alfresco.module.metadatawriter.aspect.impl.ExportMetadataAspect">
     <property name="metadataServiceRegistry" ref="metadata-writer.serviceRegistry" />
     <property name="nodeService" ref="NodeService" />
-    <property name="dictionaryService" ref="DictionaryService" />
-    <property name="transactionService" ref="TransactionService" />
-    <property name="threadPoolExecutor" ref="metadata-writer.threadPoolExecutor" />
     <property name="policyComponent" ref="policyComponent" />
-    <property name="behaviourFilter" ref="policyBehaviourFilter" />
-    <property name="lockService" ref="LockService" />
   </bean>
 
   <!-- Metadata service abstract bean -->
@@ -73,6 +68,10 @@
     <constructor-arg type="org.alfresco.service.namespace.NamespaceService" ref="NamespaceService" />
     <constructor-arg type="org.alfresco.service.transaction.TransactionService" ref="TransactionService" />
     <constructor-arg type="org.alfresco.repo.policy.BehaviourFilter" ref="policyBehaviourFilter" />
+    <constructor-arg type="org.alfresco.service.cmr.repository.NodeService" ref="NodeService" />
+    <property name="nodeMetadataProcessor" ref="metadata-writer.metadataProcessor" />
+    <property name="nodeVerifierProcessor" ref="metadata-writer.verifierProcessor" />
+    <property name="threadPoolExecutor" ref="metadata-writer.threadPoolExecutor" />
   </bean>
 
   <!-- Creates a thread pool executer with a very low priority. This is to assure that threads that takes a very long time will not interfere too much -->
@@ -82,6 +81,16 @@
     <property name="maximumPoolSize" value="2" />
     <property name="threadPriority" value="1" />
     <property name="timeout" value="10" />
+  </bean>
+
+  <bean id="metadata-writer.metadataProcessor" class="org.redpill.alfresco.module.metadatawriter.services.impl.DefaultMetadataProcessor">
+    <constructor-arg type="org.alfresco.service.cmr.repository.NodeService" ref="NodeService" />
+  </bean>
+
+  <bean id="metadata-writer.verifierProcessor" class="org.redpill.alfresco.module.metadatawriter.services.impl.DefaultVerifierProcessor">
+    <constructor-arg type="org.alfresco.service.cmr.repository.NodeService" ref="NodeService" />
+    <constructor-arg type="org.alfresco.service.cmr.lock.LockService" ref="LockService" />
+    <constructor-arg type="org.alfresco.service.cmr.dictionary.DictionaryService" ref="DictionaryService" />
   </bean>
 
 </beans>
