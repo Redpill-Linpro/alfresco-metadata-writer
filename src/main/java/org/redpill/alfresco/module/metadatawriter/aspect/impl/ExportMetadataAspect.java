@@ -11,6 +11,8 @@ import org.alfresco.repo.policy.Behaviour;
 import org.alfresco.repo.policy.JavaBehaviour;
 import org.alfresco.repo.policy.PolicyComponent;
 import org.alfresco.repo.version.VersionServicePolicies.AfterCreateVersionPolicy;
+import org.alfresco.service.cmr.lock.LockService;
+import org.alfresco.service.cmr.lock.LockType;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.cmr.version.Version;
@@ -35,6 +37,8 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
 
   private MetadataServiceRegistry _metadataServiceRegistry;
 
+  private LockService _lockService;
+
   public void setPolicyComponent(PolicyComponent policyComponent) {
     _policyComponent = policyComponent;
   }
@@ -45,6 +49,10 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
 
   public void setMetadataServiceRegistry(MetadataServiceRegistry metadataServiceRegistry) {
     _metadataServiceRegistry = metadataServiceRegistry;
+  }
+
+  public void setLockService(LockService lockService) {
+    _lockService = lockService;
   }
 
   @Override
@@ -58,11 +66,25 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
       return;
     }
 
+    if (_nodeService.hasAspect(nodeRef, ContentModel.ASPECT_WORKING_COPY)) {
+      return;
+    }
+
+    if (_nodeService.hasAspect(nodeRef, ContentModel.ASPECT_CHECKED_OUT)) {
+      return;
+    }
+
+    LockType lockType = _lockService.getLockType(nodeRef);
+
+    if (LockType.READ_ONLY_LOCK == lockType || LockType.WRITE_LOCK == lockType) {
+      return;
+    }
+
     verifyMetadataExportableNode(nodeRef, MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
 
     // Only update properties if before and after differ
     if (propertiesUpdatedRequireExport(before, after)) {
-        prepareWrite(nodeRef);
+      prepareWrite(nodeRef);
     } else {
       if (LOG.isDebugEnabled()) {
         LOG.debug("Property updates did not require metadata export for node " + nodeRef);
@@ -83,6 +105,20 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
       return;
     }
 
+    if (_nodeService.hasAspect(versionableNode, ContentModel.ASPECT_WORKING_COPY)) {
+      return;
+    }
+
+    if (_nodeService.hasAspect(versionableNode, ContentModel.ASPECT_CHECKED_OUT)) {
+      return;
+    }
+
+    LockType lockType = _lockService.getLockType(versionableNode);
+
+    if (LockType.READ_ONLY_LOCK == lockType || LockType.WRITE_LOCK == lockType) {
+      return;
+    }
+
     verifyMetadataExportableNode(versionableNode, MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
 
     prepareWrite(versionableNode);
@@ -96,6 +132,20 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
     }
 
     if (!_nodeService.exists(nodeRef)) {
+      return;
+    }
+
+    if (_nodeService.hasAspect(nodeRef, ContentModel.ASPECT_WORKING_COPY)) {
+      return;
+    }
+
+    if (_nodeService.hasAspect(nodeRef, ContentModel.ASPECT_CHECKED_OUT)) {
+      return;
+    }
+
+    LockType lockType = _lockService.getLockType(nodeRef);
+
+    if (LockType.READ_ONLY_LOCK == lockType || LockType.WRITE_LOCK == lockType) {
       return;
     }
 
@@ -113,53 +163,50 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
         Behaviour.NotificationFrequency.TRANSACTION_COMMIT));
 
     _policyComponent.bindClassBehaviour(QName.createQName(NamespaceService.ALFRESCO_URI, "afterCreateVersion"), MetadataWriterModel.ASPECT_METADATA_WRITEABLE, new JavaBehaviour(this,
-        "afterCreateVersion", Behaviour.NotificationFrequency.FIRST_EVENT));
-
-
+        "afterCreateVersion", Behaviour.NotificationFrequency.TRANSACTION_COMMIT));
   }
 
   // ---------------------------------------------------
   // Private methods
   // ---------------------------------------------------
   private void verifyMetadataExportableNode(final NodeRef node, final QName aspectQName) {
-      assert null != node : "Provided node is null!";
-      assert _nodeService.hasAspect(node, aspectQName) : "Node " + node + " does not have mandatory aspect " + aspectQName;
+    assert null != node : "Provided node is null!";
+    assert _nodeService.hasAspect(node, aspectQName) : "Node " + node + " does not have mandatory aspect " + aspectQName;
   }
 
 
   private void prepareWrite(final NodeRef node) {
 
-      final String serviceName = (String) _nodeService.getProperty(node, MetadataWriterModel.PROP_METADATA_SERVICE_NAME);
+    final String serviceName = (String) _nodeService.getProperty(node, MetadataWriterModel.PROP_METADATA_SERVICE_NAME);
 
-      if (!StringUtils.hasText(serviceName)) {
-          if (LOG.isInfoEnabled()) {
-              LOG.info("No Metadata service specified for node " + node);
-          }
-          return;
+    if (!StringUtils.hasText(serviceName)) {
+      if (LOG.isInfoEnabled()) {
+        LOG.info("No Metadata service specified for node " + node);
       }
-
-      final MetadataService metadataService;
-      try {
-          metadataService = _metadataServiceRegistry.findService(serviceName);
-
-          metadataService.write(node);
-      } catch (UnknownServiceNameException e) {
-          e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-      } catch (final MetadataService.UpdateMetadataException ume) {
-        throw new AlfrescoRuntimeException("Could not write properties to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME), ume);
-      }
-        catch(Throwable t) {
-        LOG.warn("Problem writing metadata: " + t, t);
-      }
+      return;
     }
 
-    /**
-     * Ensures that metadata only exported when it has to
-     *
-     * @param before
-     * @param after
-     * @return
-     */
+    final MetadataService metadataService;
+    try {
+      metadataService = _metadataServiceRegistry.findService(serviceName);
+
+      metadataService.write(node);
+    } catch (UnknownServiceNameException e) {
+      e.printStackTrace(); // To change body of catch statement use File | Settings | File Templates.
+    } catch (final MetadataService.UpdateMetadataException ume) {
+      throw new AlfrescoRuntimeException("Could not write properties to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME), ume);
+    } catch (Throwable t) {
+      LOG.warn("Problem writing metadata: " + t, t);
+    }
+  }
+
+  /**
+   * Ensures that metadata only exported when it has to
+   * 
+   * @param before
+   * @param after
+   * @return
+   */
   // TODO: Should add black list of properties ignored in comparison to avoid
   // unnecessary updates
   private boolean propertiesUpdatedRequireExport(final Map<QName, Serializable> before, final Map<QName, Serializable> after) {

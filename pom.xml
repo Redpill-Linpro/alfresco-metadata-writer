@@ -1,15 +1,35 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
   <modelVersion>4.0.0</modelVersion>
 
+  <parent>
+    <groupId>org.alfresco.maven</groupId>
+    <artifactId>alfresco-sdk-parent</artifactId>
+    <version>1.0.2</version>
+  </parent>
+
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <alfresco.groupId>org.alfresco.enterprise</alfresco.groupId>
+    <alfresco.version>4.1.5</alfresco.version>
   </properties>
 
   <groupId>org.redpill-linpro.alfresco.module</groupId>
   <artifactId>metadatawriter</artifactId>
   <packaging>jar</packaging>
   <name>Metadata Writer Framework</name>
-  <version>4.1.5</version>
+  <version>4.1.5.1</version>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>${alfresco.groupId}</groupId>
+        <artifactId>alfresco-platform-distribution</artifactId>
+        <version>${alfresco.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
@@ -40,64 +60,26 @@
       <scope>provided</scope>
     </dependency>
 
-  <!-- dependency for community version
+    <!-- dependency for enterprise version 4.1.5 -->
     <dependency>
-      <groupId>org.alfresco</groupId>
-      <artifactId>alfresco-datamodel</artifactId>
-        <version>4.0.b</version>
-        <classifier>community</classifier>
+      <groupId>${alfresco.groupId}</groupId>
+      <artifactId>alfresco-data-model</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.alfresco</groupId>
+      <groupId>${alfresco.groupId}</groupId>
       <artifactId>alfresco-repository</artifactId>
-        <version>4.0.b</version>
-        <classifier>community</classifier>
     </dependency>
 
     <dependency>
-      <groupId>org.alfresco</groupId>
+      <groupId>${alfresco.groupId}</groupId>
       <artifactId>alfresco-core</artifactId>
-        <version>4.0.b</version>
-        <classifier>community</classifier>
     </dependency>
 
     <dependency>
-      <groupId>org.alfresco</groupId>
+      <groupId>${alfresco.groupId}</groupId>
       <artifactId>alfresco-web-client</artifactId>
-        <version>4.0.b</version>
-        <classifier>community</classifier>
     </dependency>
-  -->
-
-   <!-- dependency for enterprise version 4.1.5   -->
-      <dependency>
-          <groupId>org.alfresco.enterprise</groupId>
-          <artifactId>alfresco-data-model</artifactId>
-          <version>4.1.5</version>
-      </dependency>
-
-      <dependency>
-          <groupId>org.alfresco.enterprise</groupId>
-          <artifactId>alfresco-repository</artifactId>
-          <version>4.1.5</version>
-          <scope>provided</scope>
-      </dependency>
-
-      <dependency>
-          <groupId>org.alfresco.enterprise</groupId>
-          <artifactId>alfresco-core</artifactId>
-          <version>4.1.5</version>
-          <scope>provided</scope>
-      </dependency>
-
-      <dependency>
-          <groupId>org.alfresco.enterprise</groupId>
-          <artifactId>alfresco-web-client</artifactId>
-          <version>4.1.5</version>
-          <scope>provided</scope>
-      </dependency>
-
 
     <dependency>
       <groupId>commons-logging</groupId>
@@ -146,6 +128,8 @@
   </organization>
 
   <build>
+   <finalName>${artifactId}-${version}</finalName>
+  
     <resources>
       <resource>
         <directory>src/main/config</directory>
@@ -159,7 +143,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.3.2</version>
         <configuration>
           <source>1.6</source>
           <target>1.6</target>
@@ -169,7 +152,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.11</version>
         <configuration>
           <excludes>
             <exclude>**/ExportMetadataAspectTest.java</exclude>
@@ -180,7 +162,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
-        <version>2.3.2</version>
         <configuration>
           <includes>
             <include>**/*.class</include>

@@ -20,6 +20,7 @@ package org.redpill.alfresco.module.metadatawriter.util;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -59,7 +60,7 @@ import org.springframework.beans.factory.InitializingBean;
  * 
  * @author Derek Hulley
  */
-public class ThreadPoolExecutorFactoryBean implements FactoryBean, InitializingBean, DisposableBean {
+public class ThreadPoolExecutorFactoryBean implements FactoryBean<ExecutorService>, InitializingBean, DisposableBean {
   private static final int DEFAULT_CORE_POOL_SIZE = 20;
   private static final int DEFAULT_MAXIMUM_POOL_SIZE = -1; // -1 is a sign that
   // it must match the
@@ -215,7 +216,7 @@ public class ThreadPoolExecutorFactoryBean implements FactoryBean, InitializingB
    * @return Returns the singleton {@link ThreadPoolExecutor instance}.
    */
   @Override
-  public Object getObject() throws Exception {
+  public ExecutorService getObject() throws Exception {
     if (instance == null) {
       throw new AlfrescoRuntimeException("The ThreadPoolExecutor instance has not been created");
     }
@@ -226,7 +227,7 @@ public class ThreadPoolExecutorFactoryBean implements FactoryBean, InitializingB
    * @see ThreadPoolExecutor
    */
   @Override
-  public Class getObjectType() {
+  public Class<TimeoutThreadPoolExecutor> getObjectType() {
     return TimeoutThreadPoolExecutor.class;
   }
 

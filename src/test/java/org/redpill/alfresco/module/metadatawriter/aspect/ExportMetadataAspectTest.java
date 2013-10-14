@@ -238,7 +238,6 @@ public class ExportMetadataAspectTest {
     });
   }
 
-  @SuppressWarnings("unchecked")
   private void expectNeverExportProperties() throws UpdateMetadataException {
     mockery.checking(new Expectations() {
       {

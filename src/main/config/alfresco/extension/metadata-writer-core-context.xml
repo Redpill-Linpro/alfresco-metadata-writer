@@ -59,6 +59,7 @@
     <property name="metadataServiceRegistry" ref="metadata-writer.serviceRegistry" />
     <property name="nodeService" ref="NodeService" />
     <property name="policyComponent" ref="policyComponent" />
+    <property name="lockService" ref="LockService" />
   </bean>
 
   <!-- Metadata service abstract bean -->
