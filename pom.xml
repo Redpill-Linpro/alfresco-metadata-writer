@@ -3,9 +3,9 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.alfresco.maven</groupId>
-    <artifactId>alfresco-sdk-parent</artifactId>
-    <version>1.0.2</version>
+    <groupId>com.redpill-linpro.alfresco</groupId>
+    <artifactId>alfresco-base</artifactId>
+    <version>1.1.1.0</version>
   </parent>
 
   <properties>
@@ -211,12 +211,8 @@
 
   <repositories>
     <repository>
-      <id>alfresco</id>
-      <url>http://maven.alfresco.com/nexus/content/groups/public/</url>
-    </repository>
-    <repository>
-      <id>alfresco-snapshots</id>
-      <url>http://maven.alfresco.com/nexus/content/groups/public-snapshots</url>
+      <id>redpill-linpro</id>
+      <url>http://maven.redpill-linpro.com/nexus/content/groups/public</url>
       <snapshots>
         <enabled>true</enabled>
         <updatePolicy>daily</updatePolicy>
@@ -226,12 +222,8 @@
 
   <pluginRepositories>
     <pluginRepository>
-      <id>alfresco</id>
-      <url>http://maven.alfresco.com/nexus/content/groups/public/</url>
-    </pluginRepository>
-    <pluginRepository>
-      <id>alfresco-snapshots</id>
-      <url>http://maven.alfresco.com/nexus/content/groups/public-snapshots</url>
+      <id>redpill-linpro</id>
+      <url>http://maven.redpill-linpro.com/nexus/content/groups/public</url>
       <snapshots>
         <enabled>true</enabled>
         <updatePolicy>daily</updatePolicy>
