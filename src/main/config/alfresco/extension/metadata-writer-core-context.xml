@@ -11,14 +11,6 @@
     </property>
   </bean>
 
-  <bean id="metadata-writer.configBootstrap" class="org.alfresco.web.config.WebClientConfigBootstrap" init-method="init">
-    <property name="configs">
-      <list>
-        <value>alfresco/extension/metadata-writer-web-client-config.xml</value>
-      </list>
-    </property>
-  </bean>
-
   <!-- The Metadata service registry -->
   <bean id="metadata-writer.serviceRegistry" class="org.redpill.alfresco.module.metadatawriter.factories.impl.MetadataServiceRegistryImpl" />
 
