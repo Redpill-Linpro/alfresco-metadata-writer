@@ -62,9 +62,11 @@
     <constructor-arg type="org.alfresco.service.transaction.TransactionService" ref="TransactionService" />
     <constructor-arg type="org.alfresco.repo.policy.BehaviourFilter" ref="policyBehaviourFilter" />
     <constructor-arg type="org.alfresco.service.cmr.repository.NodeService" ref="NodeService" />
+    <constructor-arg type="org.alfresco.service.cmr.action.ActionService" ref="ActionService" />
     <property name="nodeMetadataProcessor" ref="metadata-writer.metadataProcessor" />
     <property name="nodeVerifierProcessor" ref="metadata-writer.verifierProcessor" />
     <property name="threadPoolExecutor" ref="metadata-writer.threadPoolExecutor" />
+    <property name="deleteRenditions" value="true" />
   </bean>
 
   <!-- Creates a thread pool executer with a very low priority. This is to assure that threads that takes a very long time will not interfere too much -->

@@ -11,7 +11,7 @@
 
 	<properties>
 		<alfresco.groupId>org.alfresco</alfresco.groupId>
-		<alfresco.version>4.2.1</alfresco.version>
+		<alfresco.version>4.2.2</alfresco.version>
 		<java.source.version>1.7</java.source.version>
 		<java.target.version>1.7</java.target.version>
 	</properties>
@@ -20,7 +20,7 @@
 	<artifactId>metadatawriter</artifactId>
 	<packaging>jar</packaging>
 	<name>Metadata Writer Framework</name>
-	<version>4.2.1.1</version>
+	<version>4.2.2.1</version>
 
 	<dependencyManagement>
 		<dependencies>
@@ -49,29 +49,6 @@
 			<artifactId>jmock-junit4</artifactId>
 		</dependency>
 
-
-			<!-- <dependency> <groupId>org.jmock</groupId> <artifactId>jmock</artifactId> 
-				<version>2.5.1</version> <scope>test</scope> </dependency> <dependency> <groupId>org.jmock</groupId> 
-				<artifactId>jmock-legacy</artifactId> <version>2.5.1</version> <scope>test</scope> 
-				</dependency> <dependency> <groupId>junit</groupId> <artifactId>junit</artifactId> 
-				<version>4.7</version> <scope>test</scope> </dependency> <dependency> <groupId>org.apache.poi</groupId> 
-				<artifactId>poi-ooxml</artifactId> <version>3.8</version> <scope>provided</scope> 
-				</dependency> -->
-
-			<!-- dependency for enterprise version 4.1.5 -->
-			<!-- <dependency> <groupId>${alfresco.groupId}</groupId> <artifactId>alfresco-data-model</artifactId> 
-				</dependency> <dependency> <groupId>${alfresco.groupId}</groupId> <artifactId>alfresco-repository</artifactId> 
-				</dependency> <dependency> <groupId>${alfresco.groupId}</groupId> <artifactId>alfresco-core</artifactId> 
-				</dependency> <dependency> <groupId>${alfresco.groupId}</groupId> <artifactId>alfresco-web-client</artifactId> 
-				</dependency> <dependency> <groupId>commons-logging</groupId> <artifactId>commons-logging</artifactId> 
-				<version>1.1.1</version> <scope>provided</scope> </dependency> <dependency> 
-				<groupId>commons-io</groupId> <artifactId>commons-io</artifactId> <version>1.4</version> 
-				<scope>provided</scope> </dependency> <dependency> <groupId>log4j</groupId> 
-				<artifactId>log4j</artifactId> <version>1.2.16</version> <scope>provided</scope> 
-				</dependency> <dependency> <groupId>org.springframework.extensions.surf</groupId> 
-				<artifactId>spring-surf-core</artifactId> <version>1.0.0</version> <scope>provided</scope> 
-				</dependency> <dependency> <groupId>org.apache.pdfbox</groupId> <artifactId>pdfbox</artifactId> 
-				<version>1.5.0</version> <scope>provided</scope> </dependency> -->
 	</dependencies>
 
 	<issueManagement>
@@ -119,7 +96,6 @@
 					</execution>
 				</executions>
 			</plugin>
-
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
