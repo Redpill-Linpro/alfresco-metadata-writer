@@ -17,11 +17,14 @@ import java.util.concurrent.TimeoutException;
 import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.policy.BehaviourFilter;
+import org.alfresco.repo.rendition.executer.DeleteRenditionActionExecuter;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
 import org.alfresco.repo.transaction.AlfrescoTransactionSupport;
 import org.alfresco.repo.transaction.RetryingTransactionHelper;
 import org.alfresco.repo.transaction.TransactionListener;
 import org.alfresco.repo.transaction.TransactionListenerAdapter;
+import org.alfresco.service.cmr.action.Action;
+import org.alfresco.service.cmr.action.ActionService;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.namespace.NamespaceException;
@@ -59,6 +62,14 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
   private NodeService _nodeService;
   private NodeMetadataProcessor _nodeMetadataProcessor;
   private NodeVerifierProcessor _nodeVerifierProcessor;
+  private ActionService _actionService;
+
+  /**
+   * Controls if existing renditions will be deleted after a successful metadata write. If renditions are not deleted
+   * they may not reflect the actual node content
+   */
+  private boolean _deleteRenditions = false;
+
   private static final Object KEY_UPDATER = MetadataService.class.getName() + ".updater";
   private ExecutorService _executorService;
   private int _timeout = MetadataService.DEFAULT_TIMEOUT;
@@ -67,13 +78,14 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
   // Public constructor
   // ---------------------------------------------------
   public MetadataServiceImpl(final MetadataServiceRegistry registry, final MetadataContentFactory metadataContentFactory, final NamespaceService namespaceService,
-      TransactionService transactionService, BehaviourFilter behaviourFilter, final NodeService nodeService) {
+      TransactionService transactionService, BehaviourFilter behaviourFilter, final NodeService nodeService, final ActionService actionService) {
     _registry = registry;
     _metadataContentFactory = metadataContentFactory;
     _namespaceService = namespaceService;
     _transactionService = transactionService;
     _behaviourFilter = behaviourFilter;
     _nodeService = nodeService;
+    _actionService = actionService;
   }
 
   // ---------------------------------------------------
@@ -114,6 +126,10 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
 
   public void setTimeout(int timeout) {
     _timeout = timeout;
+  }
+
+  public void setDeleteRenditions(boolean deleteRenditions) {
+    _deleteRenditions = deleteRenditions;
   }
 
   // ---------------------------------------------------
@@ -355,10 +371,10 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
 
     @Override
     public Void call() throws Exception {
-      AuthenticationUtil.runAsSystem(new AuthenticationUtil.RunAsWork<String>() {
+      AuthenticationUtil.runAsSystem(new AuthenticationUtil.RunAsWork<Void>() {
 
         @Override
-        public String doWork() throws Exception {
+        public Void doWork() throws Exception {
           RetryingTransactionHelper.RetryingTransactionCallback<Void> callback = new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
 
             @Override
@@ -378,18 +394,49 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
             LOG.error("Failed to write metadata properties to node: " + _nodeRef, ex);
           }
 
-          return "";
+          return null;
         }
 
       });
 
+      if (_deleteRenditions) {
+        deleteRenditions();
+      }
+
       if (_callback != null) {
         _callback.execute();
       }
-
+      
       return null;
     }
 
+    /**
+     * Makes a call to the action service for each rendition with a delete request.
+     */
+    private void deleteRenditions() {
+      final QName ASSOC_WEBPREVIEW = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "webpreview");
+      final QName ASSOC_PDF = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "pdf");
+      final QName ASSOC_DOCLIB = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "doclib");
+
+      // Delete web preview
+      triggerDeleteRendition(ASSOC_WEBPREVIEW);
+
+      // Delete pdf rendition
+      triggerDeleteRendition(ASSOC_PDF);
+
+      // Delete thumbnail (doclib)
+      triggerDeleteRendition(ASSOC_DOCLIB);
+    }
+
+    private void triggerDeleteRendition(final QName renditionQName) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Deleting rendition " + renditionQName);
+      }
+
+      final Action deleteRenditionAction = _actionService.createAction(DeleteRenditionActionExecuter.NAME);
+      deleteRenditionAction.setParameterValue(DeleteRenditionActionExecuter.PARAM_RENDITION_DEFINITION_NAME, renditionQName);
+      _actionService.executeAction(deleteRenditionAction, _nodeRef);
+    }
   }
 
   @Override
