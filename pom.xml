@@ -5,19 +5,21 @@
   <parent>
     <groupId>com.redpill-linpro.alfresco</groupId>
     <artifactId>alfresco-base</artifactId>
-    <version>1.1.1.0</version>
+    <version>1.1.1.3</version>
   </parent>
 
   <properties>
     <alfresco.groupId>org.alfresco.enterprise</alfresco.groupId>
-    <alfresco.version>4.1.5</alfresco.version>
+    <alfresco.version>4.1.8</alfresco.version>
+    <java.source.version>1.6</java.source.version>
+    <java.target.version>1.6</java.target.version>
   </properties>
 
   <groupId>org.redpill-linpro.alfresco.module</groupId>
   <artifactId>metadatawriter</artifactId>
   <packaging>jar</packaging>
   <name>Metadata Writer Framework</name>
-  <version>4.1.5.2</version>
+  <version>4.1.8</version>
 
   <dependencyManagement>
     <dependencies>
@@ -35,85 +37,31 @@
     <dependency>
       <groupId>org.jmock</groupId>
       <artifactId>jmock</artifactId>
-      <version>2.5.1</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.jmock</groupId>
       <artifactId>jmock-legacy</artifactId>
-      <version>2.5.1</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.7</version>
       <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.poi</groupId>
-      <artifactId>poi-ooxml</artifactId>
-      <version>3.8</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <!-- dependency for enterprise version 4.1.5 -->
-    <dependency>
-      <groupId>${alfresco.groupId}</groupId>
-      <artifactId>alfresco-data-model</artifactId>
     </dependency>
 
     <dependency>
       <groupId>${alfresco.groupId}</groupId>
       <artifactId>alfresco-repository</artifactId>
     </dependency>
-
+    
     <dependency>
-      <groupId>${alfresco.groupId}</groupId>
-      <artifactId>alfresco-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>${alfresco.groupId}</groupId>
-      <artifactId>alfresco-web-client</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-logging</groupId>
-      <artifactId>commons-logging</artifactId>
-      <version>1.1.1</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>1.4</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>1.2.16</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.extensions.surf</groupId>
-      <artifactId>spring-surf-core</artifactId>
-      <version>1.0.0</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.pdfbox</groupId>
-      <artifactId>pdfbox</artifactId>
-      <version>1.5.0</version>
-      <scope>provided</scope>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-core</artifactId>
+      <version>1.3</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -135,20 +83,12 @@
         <directory>src/main/config</directory>
         <includes>
           <include>**/*.xml</include>
+          <include>**/*.properties</include>
         </includes>
       </resource>
     </resources>
 
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
-        </configuration>
-      </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
@@ -184,26 +124,6 @@
           <excludes>
             <exclude>**/ExportMetadataAspectTest.java</exclude>
           </excludes>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <includes>
-            <include>**/*.class</include>
-            <include>**/*.xml</include>
-          </includes>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <configuration>
-          <descriptors>
-            <descriptor>src/assembly/dist.xml</descriptor>
-          </descriptors>
         </configuration>
       </plugin>
     </plugins>
