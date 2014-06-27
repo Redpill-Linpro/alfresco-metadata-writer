@@ -67,6 +67,9 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
   /**
    * Controls if existing renditions will be deleted after a successful metadata write. If renditions are not deleted
    * they may not reflect the actual node content
+   * Controls if existing renditions will be deleted after a successful metadata
+   * write. If renditions are not deleted they may not reflect the actual node
+   * content
    */
   private boolean _deleteRenditions = false;
 
@@ -171,11 +174,15 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
     RetryingTransactionHelper.RetryingTransactionCallback<Void> callback = new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
 
       public Void execute() throws Throwable {
-
+        if (contentRef == null || !_nodeService.exists(contentRef)) {
+          LOG.warn("Node " + contentRef + " does not exist. Aborting writeNode...");
+          return null;
+        }
         /*
-         * Change 130214 Carl Nordenfelt: Needed to disable all behaviours since versioning was triggered for the
-         * VERSIONABLE_ASPECT behaviour even though it was disabled. Otherwise a new version is created when the updated
-         * content is written (and cm:autoVersion == true)
+         * Change 130214 Carl Nordenfelt: Needed to disable all behaviours since
+         * versioning was triggered for the VERSIONABLE_ASPECT behaviour even
+         * though it was disabled. Otherwise a new version is created when the
+         * updated content is written (and cm:autoVersion == true)
          */
 
         // TODO: Remove!
@@ -290,6 +297,11 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
   }
 
   private void doUpdateProperties(final NodeRef node) {
+
+    if (node == null || !_nodeService.exists(node)) {
+      LOG.warn("Node " + node + " does not exist. Aborting doUpdateProperties...");
+      return;
+    }
 
     final Serializable failOnUnsupportedValue = _nodeService.getProperty(node, MetadataWriterModel.PROP_METADATA_FAIL_ON_UNSUPPORTED);
 
@@ -411,7 +423,8 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
     }
 
     /**
-     * Makes a call to the action service for each rendition with a delete request.
+     * Makes a call to the action service for each rendition with a delete
+     * request.
      */
     private void deleteRenditions() {
       final QName ASSOC_WEBPREVIEW = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "webpreview");
