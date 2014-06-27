@@ -1,14 +1,12 @@
 package org.redpill.alfresco.module.metadatawriter.services;
 
-import java.io.Serializable;
-import java.util.Map;
-
 import org.alfresco.service.cmr.repository.NodeRef;
-import org.alfresco.service.namespace.QName;
 
 public interface MetadataService {
 
-  void write(NodeRef contentRef, Map<QName, Serializable> properties) throws UpdateMetadataException;
+  void write(NodeRef contentRef) throws UpdateMetadataException;
+
+  void write(NodeRef nodeRef, MetadataWriterCallback callback) throws UpdateMetadataException;
 
   String getServiceName();
 

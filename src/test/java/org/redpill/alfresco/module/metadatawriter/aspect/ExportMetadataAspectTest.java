@@ -10,10 +10,8 @@ import org.alfresco.repo.policy.PolicyComponent;
 import org.alfresco.service.cmr.dictionary.DictionaryService;
 import org.alfresco.service.cmr.lock.LockService;
 import org.alfresco.service.cmr.lock.LockStatus;
-import org.alfresco.service.cmr.lock.NodeLockedException;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
-import org.alfresco.service.cmr.version.Version;
 import org.alfresco.service.namespace.QName;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
@@ -57,8 +55,6 @@ public class ExportMetadataAspectTest {
   public void setUp() throws Exception {
     properties.clear();
     aspect = new ExportMetadataAspect();
-    aspect.setDictionaryService(dictionaryService);
-    aspect.setLockService(lockService);
     aspect.setMetadataServiceRegistry(serviceRegistry);
     aspect.setNodeService(nodeService);
     aspect.setPolicyComponent(policyComponent);
@@ -141,34 +137,34 @@ public class ExportMetadataAspectTest {
     aspect.onUpdateProperties(nodeRef, properties, properties);
   }
 
-//  @Test
-//  public void afterVersionCreated() throws UnsupportedMimetypeException, UnknownServiceNameException, IOException, UpdateMetadataException {
-//
-//    final String VERSION_LABEL = "1.4";
-//
-//    final Version version = mockery.mock(Version.class);
-//
-//    mockery.checking(new Expectations() {
-//      {
-//        allowing(version).getVersionLabel();
-//        will(returnValue(VERSION_LABEL));
-//      }
-//    });
-//
-//    stubHasAspect(nodeRef, ContentModel.ASPECT_VERSIONABLE, true);
-//    stubNodeExists(nodeRef, true);
-//    stubServiceName(nodeRef, SERVICE_NAME);
-//    stubNodeLocked(nodeRef, false);
-//    stubIsFolderSubType(nodeRef, false);
-//    stubGetProperties(nodeRef);
-//
-//    expectCreateService(SERVICE_NAME);
-//
-//    properties.put(ContentModel.PROP_VERSION_LABEL, VERSION_LABEL);
-//    expectUpdateProperties(nodeRef, properties);
-//
-//    aspect.afterCreateVersion(nodeRef, version);
-//  }
+  //  @Test
+  //  public void afterVersionCreated() throws UnsupportedMimetypeException, UnknownServiceNameException, IOException, UpdateMetadataException {
+  //
+  //    final String VERSION_LABEL = "1.4";
+  //
+  //    final Version version = mockery.mock(Version.class);
+  //
+  //    mockery.checking(new Expectations() {
+  //      {
+  //        allowing(version).getVersionLabel();
+  //        will(returnValue(VERSION_LABEL));
+  //      }
+  //    });
+  //
+  //    stubHasAspect(nodeRef, ContentModel.ASPECT_VERSIONABLE, true);
+  //    stubNodeExists(nodeRef, true);
+  //    stubServiceName(nodeRef, SERVICE_NAME);
+  //    stubNodeLocked(nodeRef, false);
+  //    stubIsFolderSubType(nodeRef, false);
+  //    stubGetProperties(nodeRef);
+  //
+  //    expectCreateService(SERVICE_NAME);
+  //
+  //    properties.put(ContentModel.PROP_VERSION_LABEL, VERSION_LABEL);
+  //    expectUpdateProperties(nodeRef, properties);
+  //
+  //    aspect.afterCreateVersion(nodeRef, version);
+  //  }
 
   // ---------------------------------------------------
   // Helpers
@@ -182,7 +178,7 @@ public class ExportMetadataAspectTest {
           will(returnValue(LockStatus.LOCKED));
         }
         else {
-        	will(returnValue(LockStatus.NO_LOCK));
+          will(returnValue(LockStatus.NO_LOCK));
         }
       }
     });
@@ -223,15 +219,6 @@ public class ExportMetadataAspectTest {
     });
   }
 
-  private void stubGetProperties(final NodeRef nodeRef2) {
-    mockery.checking(new Expectations() {
-      {
-        allowing(nodeService).getProperties(nodeRef);
-        will(returnValue(properties));
-      }
-    });
-  }
-
   private void stubHasAspect(final NodeRef nodeRef, final QName aspect, final boolean b) {
     mockery.checking(new Expectations() {
       {
@@ -251,11 +238,10 @@ public class ExportMetadataAspectTest {
     });
   }
 
-  @SuppressWarnings("unchecked")
   private void expectNeverExportProperties() throws UpdateMetadataException {
     mockery.checking(new Expectations() {
       {
-        never(service).write(with(any(NodeRef.class)), with(any(Map.class)));
+        never(service).write(with(any(NodeRef.class)));
       }
     });
   }
@@ -272,7 +258,7 @@ public class ExportMetadataAspectTest {
 
     mockery.checking(new Expectations() {
       {
-        oneOf(service).write(contentRef, properties);
+        oneOf(service).write(contentRef);
       }
     });
   }

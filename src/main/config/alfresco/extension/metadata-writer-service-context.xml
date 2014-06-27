@@ -1,24 +1,19 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!DOCTYPE beans PUBLIC '-//SPRING//DTD BEAN//EN' 'http://www.springframework.org/dtd/spring-beans.dtd'>
 
-<beans>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd">
 
-  <bean id="metadata-writer.sample.service" class="org.redpill.alfresco.module.metadatawriter.services.impl.MetadataServiceImpl"
-    init-method="register" parent="metadata-writer.abstract.service">
-    <constructor-arg type="java.lang.String" value="sampleService" />
-    <constructor-arg type="java.util.List">
+  <bean id="metadata-writer.sample.service" class="org.redpill.alfresco.module.metadatawriter.services.impl.MetadataServiceImpl" init-method="register" parent="metadata-writer.abstract.service">
+    <property name="serviceName" value="sampleService" />
+    <property name="converters">
       <list></list>
-    </constructor-arg>
-    <constructor-arg type="java.util.Properties">
+    </property>
+    <property name="mappings">
       <props>
-        <prop key="MyDescription">
-          cm:description
-        </prop>
-        <prop key="DocumentVersion">
-          cm:versionLabel
-        </prop>
+        <prop key="MyDescription">cm:description</prop>
+        <prop key="DocumentVersion">cm:versionLabel</prop>
       </props>
-    </constructor-arg>
+    </property>
   </bean>
 
 </beans>

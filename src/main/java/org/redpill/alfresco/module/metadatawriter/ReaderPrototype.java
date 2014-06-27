@@ -82,7 +82,6 @@ public class ReaderPrototype {
       out("   No. of sections: " + sectionCount);
 
       /* Print the list of sections: */
-      @SuppressWarnings("unchecked")
       final List<Section> sections = ps.getSections();
       int nr = 0;
       for (final Section sec : sections) {
