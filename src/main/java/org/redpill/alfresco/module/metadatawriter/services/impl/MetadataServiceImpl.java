@@ -56,24 +56,21 @@ public class MetadataServiceImpl implements MetadataService {
   private NodeMetadataProcessor _nodeMetadataProcessor;
   private NodeVerifierProcessor _nodeVerifierProcessor;
   private ActionService _actionService;
-  
+
   /**
-   * Controls if existing renditions will be deleted after a successful metadata write.
-   * If renditions are not deleted they may not reflect the actual node content
+   * Controls if existing renditions will be deleted after a successful metadata
+   * write. If renditions are not deleted they may not reflect the actual node
+   * content
    */
   private boolean _deleteRenditions = false;
 
-  
   private static final Object KEY_UPDATER = MetadataService.class.getName() + ".updater";
-  
-  
+
   // ---------------------------------------------------
   // Public constructor
   // ---------------------------------------------------
-  public MetadataServiceImpl(final MetadataServiceRegistry registry, final MetadataContentFactory metadataContentFactory,
-                             final NamespaceService namespaceService, TransactionService transactionService, BehaviourFilter behaviourFilter,
-                             final NodeService nodeService,
-                             final ActionService actionService) {
+  public MetadataServiceImpl(final MetadataServiceRegistry registry, final MetadataContentFactory metadataContentFactory, final NamespaceService namespaceService,
+      TransactionService transactionService, BehaviourFilter behaviourFilter, final NodeService nodeService, final ActionService actionService) {
     _registry = registry;
     _metadataContentFactory = metadataContentFactory;
     _namespaceService = namespaceService;
@@ -122,7 +119,7 @@ public class MetadataServiceImpl implements MetadataService {
   public void setMappings(Properties mappings) {
     _metadataMapping = convertMappings(mappings);
   }
-  
+
   public void setDeleteRenditions(boolean deleteRenditions) {
     _deleteRenditions = deleteRenditions;
   }
@@ -166,11 +163,15 @@ public class MetadataServiceImpl implements MetadataService {
     RetryingTransactionHelper.RetryingTransactionCallback<Void> callback = new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
 
       public Void execute() throws Throwable {
-
+        if (contentRef == null || !_nodeService.exists(contentRef)) {
+          LOG.warn("Node " + contentRef + " does not exist. Aborting writeNode...");
+          return null;
+        }
         /*
-         * Change 130214 Carl Nordenfelt: Needed to disable all behaviours since versioning was triggered for the
-         * VERSIONABLE_ASPECT behaviour even though it was disabled. Otherwise a new version is created when the updated
-         * content is written (and cm:autoVersion == true)
+         * Change 130214 Carl Nordenfelt: Needed to disable all behaviours since
+         * versioning was triggered for the VERSIONABLE_ASPECT behaviour even
+         * though it was disabled. Otherwise a new version is created when the
+         * updated content is written (and cm:autoVersion == true)
          */
 
         // TODO: Remove!
@@ -286,6 +287,11 @@ public class MetadataServiceImpl implements MetadataService {
 
   private void doUpdateProperties(final NodeRef node) {
 
+    if (node == null || !_nodeService.exists(node)) {
+      LOG.warn("Node " + node + " does not exist. Aborting doUpdateProperties...");
+      return;
+    }
+
     final Serializable failOnUnsupportedValue = _nodeService.getProperty(node, MetadataWriterModel.PROP_METADATA_FAIL_ON_UNSUPPORTED);
 
     boolean failOnUnsupported = true;
@@ -376,8 +382,8 @@ public class MetadataServiceImpl implements MetadataService {
         }
 
       }, AuthenticationUtil.SYSTEM_USER_NAME);
-      
-      if( _deleteRenditions) {
+
+      if (_deleteRenditions) {
         deleteRenditions();
       }
 
@@ -387,28 +393,29 @@ public class MetadataServiceImpl implements MetadataService {
     }
 
     /**
-     * Makes a call to the action service for each rendition with a delete request.
+     * Makes a call to the action service for each rendition with a delete
+     * request.
      */
     private void deleteRenditions() {
       final QName ASSOC_WEBPREVIEW = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "webpreview");
       final QName ASSOC_PDF = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "pdf");
       final QName ASSOC_DOCLIB = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "doclib");
 
-      //Delete web preview
+      // Delete web preview
       triggerDeleteRendition(ASSOC_WEBPREVIEW);
-      
-      //Delete pdf rendition
+
+      // Delete pdf rendition
       triggerDeleteRendition(ASSOC_PDF);
-      
-      //Delete thumbnail (doclib)
+
+      // Delete thumbnail (doclib)
       triggerDeleteRendition(ASSOC_DOCLIB);
     }
 
     private void triggerDeleteRendition(final QName renditionQName) {
-      if(LOG.isDebugEnabled()) {
+      if (LOG.isDebugEnabled()) {
         LOG.debug("Deleting rendition " + renditionQName);
       }
-      
+
       final Action deleteRenditionAction = _actionService.createAction(DeleteRenditionActionExecuter.NAME);
       deleteRenditionAction.setParameterValue(DeleteRenditionActionExecuter.PARAM_RENDITION_DEFINITION_NAME, renditionQName);
       _actionService.executeAction(deleteRenditionAction, _nodeRef);
