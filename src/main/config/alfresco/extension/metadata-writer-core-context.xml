@@ -56,13 +56,13 @@
 
   <!-- Metadata service abstract bean -->
   <bean id="metadata-writer.abstract.service" class="org.redpill.alfresco.module.metadatawriter.services.impl.MetadataServiceImpl" init-method="register" abstract="true">
-    <constructor-arg type="org.redpill.alfresco.module.metadatawriter.factories.MetadataServiceRegistry" ref="metadata-writer.serviceRegistry" />
-    <constructor-arg type="org.redpill.alfresco.module.metadatawriter.factories.MetadataContentFactory" ref="metadata-writer.contentFactory" />
-    <constructor-arg type="org.alfresco.service.namespace.NamespaceService" ref="NamespaceService" />
-    <constructor-arg type="org.alfresco.service.transaction.TransactionService" ref="TransactionService" />
-    <constructor-arg type="org.alfresco.repo.policy.BehaviourFilter" ref="policyBehaviourFilter" />
-    <constructor-arg type="org.alfresco.service.cmr.repository.NodeService" ref="NodeService" />
-    <constructor-arg type="org.alfresco.service.cmr.action.ActionService" ref="ActionService" />
+    <property name="metadataServiceRegistry" ref="metadata-writer.serviceRegistry" />
+    <property name="metadataContentFactory" ref="metadata-writer.contentFactory" />
+    <property name="namespaceService" ref="NamespaceService" />
+    <property name="transactionService" ref="TransactionService" />
+    <property name="behaviourFilter" ref="policyBehaviourFilter" />
+    <property name="nodeService" ref="NodeService"/>
+    <property name="actionService" ref="ActionService"/>
     <property name="nodeMetadataProcessor" ref="metadata-writer.metadataProcessor" />
     <property name="nodeVerifierProcessor" ref="metadata-writer.verifierProcessor" />
     <property name="timeout" value="${metadata-writer.default.timeout}" />
