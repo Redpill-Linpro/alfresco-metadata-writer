@@ -9,7 +9,7 @@ import org.alfresco.model.ContentModel;
 import org.alfresco.repo.policy.PolicyComponent;
 import org.alfresco.service.cmr.dictionary.DictionaryService;
 import org.alfresco.service.cmr.lock.LockService;
-import org.alfresco.service.cmr.lock.LockStatus;
+import org.alfresco.service.cmr.lock.LockType;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.namespace.QName;
@@ -58,6 +58,7 @@ public class ExportMetadataAspectTest {
     aspect.setMetadataServiceRegistry(serviceRegistry);
     aspect.setNodeService(nodeService);
     aspect.setPolicyComponent(policyComponent);
+    aspect.setLockService(lockService);
   }
 
   @After
@@ -71,7 +72,8 @@ public class ExportMetadataAspectTest {
 
   @Test
   public void noExportForUnexistingNode() throws UnsupportedMimetypeException, UnknownServiceNameException, IOException, UpdateMetadataException {
-
+    stubHasAspect(nodeRef, ContentModel.ASPECT_VERSIONABLE, true);
+    stubHasAspect(nodeRef, ContentModel.ASPECT_WORKING_COPY, false);
     stubNodeExists(nodeRef, false);
 
     expectNeverFindService();
@@ -82,7 +84,8 @@ public class ExportMetadataAspectTest {
 
   @Test
   public void noUpdateForUnchangedProperties() throws UnknownServiceNameException, UpdateMetadataException {
-
+    stubHasAspect(nodeRef, ContentModel.ASPECT_WORKING_COPY, false);
+    stubHasAspect(nodeRef, ContentModel.ASPECT_CHECKED_OUT, true);
     stubNodeExists(nodeRef, true);
     stubNodeLocked(nodeRef, false);
     expectNeverFindService();
@@ -95,6 +98,7 @@ public class ExportMetadataAspectTest {
   // @Test
   public void nodeIsLocked() throws UpdateMetadataException {
     stubHasAspect(nodeRef, ContentModel.ASPECT_VERSIONABLE, true);
+    stubHasAspect(nodeRef, ContentModel.ASPECT_WORKING_COPY, false);
     stubNodeExists(nodeRef, true);
     stubServiceName(nodeRef, SERVICE_NAME);
     stubNodeLocked(nodeRef, true);
@@ -108,7 +112,8 @@ public class ExportMetadataAspectTest {
 
   @Test
   public void noServiceWithSpecifiedName() throws UnknownServiceNameException, UpdateMetadataException {
-
+    stubHasAspect(nodeRef, ContentModel.ASPECT_WORKING_COPY, false);
+    stubHasAspect(nodeRef, ContentModel.ASPECT_CHECKED_OUT, true);
     stubNodeExists(nodeRef, true);
     stubServiceName(nodeRef, SERVICE_NAME);
     stubNodeLocked(nodeRef, false);
@@ -124,12 +129,12 @@ public class ExportMetadataAspectTest {
 
   @Test
   public void propertiesUpdated() throws UnsupportedMimetypeException, UnknownServiceNameException, IOException, UpdateMetadataException {
-
-    stubHasAspect(nodeRef, ContentModel.ASPECT_VERSIONABLE, false);
+    stubHasAspect(nodeRef, ContentModel.ASPECT_WORKING_COPY, false);
+    stubHasAspect(nodeRef, ContentModel.ASPECT_CHECKED_OUT, false);
     stubNodeExists(nodeRef, true);
     stubServiceName(nodeRef, SERVICE_NAME);
     stubIsFolderSubType(nodeRef, false);
-    stubNodeLocked(nodeRef, false);
+    stubNodeLocked(nodeRef, true);
 
     expectCreateService(SERVICE_NAME);
     expectUpdateProperties(nodeRef, properties);
@@ -173,12 +178,12 @@ public class ExportMetadataAspectTest {
   private void stubNodeLocked(final NodeRef nodeRef, final boolean hasLock) {
     mockery.checking(new Expectations() {
       {
-        allowing(lockService).getLockStatus(nodeRef);
+        allowing(lockService).getLockType(nodeRef);
         if (hasLock) {
-          will(returnValue(LockStatus.LOCKED));
+          will(returnValue(LockType.READ_ONLY_LOCK));
         }
         else {
-          will(returnValue(LockStatus.NO_LOCK));
+          will(returnValue(null));
         }
       }
     });
