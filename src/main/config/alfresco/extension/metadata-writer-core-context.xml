@@ -65,17 +65,8 @@
     <constructor-arg type="org.alfresco.service.cmr.action.ActionService" ref="ActionService" />
     <property name="nodeMetadataProcessor" ref="metadata-writer.metadataProcessor" />
     <property name="nodeVerifierProcessor" ref="metadata-writer.verifierProcessor" />
-    <property name="threadPoolExecutor" ref="metadata-writer.threadPoolExecutor" />
+    <property name="timeout" value="${metadata-writer.default.timeout}" />
     <property name="deleteRenditions" value="true" />
-  </bean>
-
-  <!-- Creates a thread pool executer with a very low priority. This is to assure that threads that takes a very long time will not interfere too much -->
-  <bean id="metadata-writer.threadPoolExecutor" class="org.redpill.alfresco.module.metadatawriter.util.ThreadPoolExecutorFactoryBean">
-    <property name="poolName" value="metadata-writer.ThreadPool" />
-    <property name="corePoolSize" value="1" />
-    <property name="maximumPoolSize" value="2" />
-    <property name="threadPriority" value="1" />
-    <property name="timeout" value="10" />
   </bean>
 
   <bean id="metadata-writer.metadataProcessor" class="org.redpill.alfresco.module.metadatawriter.services.impl.DefaultMetadataProcessor">

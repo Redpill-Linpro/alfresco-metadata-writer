@@ -6,7 +6,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.model.ContentModel;
@@ -37,8 +43,10 @@ import org.redpill.alfresco.module.metadatawriter.services.MetadataService;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataWriterCallback;
 import org.redpill.alfresco.module.metadatawriter.services.NodeMetadataProcessor;
 import org.redpill.alfresco.module.metadatawriter.services.NodeVerifierProcessor;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.InitializingBean;
 
-public class MetadataServiceImpl implements MetadataService {
+public class MetadataServiceImpl implements MetadataService, InitializingBean, DisposableBean {
 
   private static final Logger LOG = Logger.getLogger(MetadataServiceImpl.class);
 
@@ -52,12 +60,13 @@ public class MetadataServiceImpl implements MetadataService {
   private BehaviourFilter _behaviourFilter;
   private TransactionListener _transactionListener;
   private NodeService _nodeService;
-  private ThreadPoolExecutor _threadPoolExecutor;
   private NodeMetadataProcessor _nodeMetadataProcessor;
   private NodeVerifierProcessor _nodeVerifierProcessor;
   private ActionService _actionService;
 
   /**
+   * Controls if existing renditions will be deleted after a successful metadata write. If renditions are not deleted
+   * they may not reflect the actual node content
    * Controls if existing renditions will be deleted after a successful metadata
    * write. If renditions are not deleted they may not reflect the actual node
    * content
@@ -65,6 +74,8 @@ public class MetadataServiceImpl implements MetadataService {
   private boolean _deleteRenditions = false;
 
   private static final Object KEY_UPDATER = MetadataService.class.getName() + ".updater";
+  private ExecutorService _executorService;
+  private int _timeout = MetadataService.DEFAULT_TIMEOUT;
 
   // ---------------------------------------------------
   // Public constructor
@@ -96,10 +107,6 @@ public class MetadataServiceImpl implements MetadataService {
     _nodeService = nodeService;
   }
 
-  public void setThreadPoolExecutor(ThreadPoolExecutor threadPoolExecutor) {
-    _threadPoolExecutor = threadPoolExecutor;
-  }
-
   public void setNodeMetadataProcessor(NodeMetadataProcessor nodeMetadataProcessor) {
     _nodeMetadataProcessor = nodeMetadataProcessor;
   }
@@ -118,6 +125,10 @@ public class MetadataServiceImpl implements MetadataService {
 
   public void setMappings(Properties mappings) {
     _metadataMapping = convertMappings(mappings);
+  }
+
+  public void setTimeout(int timeout) {
+    _timeout = timeout;
   }
 
   public void setDeleteRenditions(boolean deleteRenditions) {
@@ -338,12 +349,29 @@ public class MetadataServiceImpl implements MetadataService {
         throw new Error("MetadataWriterUpdater was null after commit!");
       }
 
-      _threadPoolExecutor.execute(updater);
+      FutureTask<Void> task = null;
+      try {
+        task = new FutureTask<Void>(updater);
 
+        _executorService.execute(task);
+
+        task.get(_timeout, TimeUnit.MILLISECONDS);
+      } catch (TimeoutException e) {
+        task.cancel(true);
+
+        throw new RuntimeException(e);
+      } catch (InterruptedException e) {
+        // We were asked to stop
+        task.cancel(true);
+
+        return;
+      } catch (ExecutionException e) {
+        throw new RuntimeException(e);
     }
   }
+  }
 
-  private class MetadataWriterUpdater implements Runnable {
+  private class MetadataWriterUpdater implements Callable<Void> {
 
     private final NodeRef _nodeRef;
     private final MetadataWriterCallback _callback;
@@ -354,11 +382,11 @@ public class MetadataServiceImpl implements MetadataService {
     }
 
     @Override
-    public void run() {
+    public Void call() throws Exception {
+      AuthenticationUtil.runAsSystem(new AuthenticationUtil.RunAsWork<Void>() {
 
-      AuthenticationUtil.runAs(new AuthenticationUtil.RunAsWork<String>() {
         @Override
-        public String doWork() throws Exception {
+        public Void doWork() throws Exception {
           RetryingTransactionHelper.RetryingTransactionCallback<Void> callback = new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
 
             @Override
@@ -378,10 +406,10 @@ public class MetadataServiceImpl implements MetadataService {
             LOG.error("Failed to write metadata properties to node: " + _nodeRef, ex);
           }
 
-          return "";
+          return null;
         }
 
-      }, AuthenticationUtil.SYSTEM_USER_NAME);
+      });
 
       if (_deleteRenditions) {
         deleteRenditions();
@@ -390,6 +418,8 @@ public class MetadataServiceImpl implements MetadataService {
       if (_callback != null) {
         _callback.execute();
       }
+      
+      return null;
     }
 
     /**
@@ -420,6 +450,16 @@ public class MetadataServiceImpl implements MetadataService {
       deleteRenditionAction.setParameterValue(DeleteRenditionActionExecuter.PARAM_RENDITION_DEFINITION_NAME, renditionQName);
       _actionService.executeAction(deleteRenditionAction, _nodeRef);
     }
+    }
+
+  @Override
+  public void afterPropertiesSet() throws Exception {
+    _executorService = Executors.newCachedThreadPool();
+  }
+
+  @Override
+  public void destroy() throws Exception {
+    _executorService.shutdown();
   }
 
 }

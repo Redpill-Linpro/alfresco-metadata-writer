@@ -3,6 +3,8 @@ package org.redpill.alfresco.module.metadatawriter.services;
 import org.alfresco.service.cmr.repository.NodeRef;
 
 public interface MetadataService {
+  
+  public static final int DEFAULT_TIMEOUT = 120000;
 
   void write(NodeRef contentRef) throws UpdateMetadataException;
 
