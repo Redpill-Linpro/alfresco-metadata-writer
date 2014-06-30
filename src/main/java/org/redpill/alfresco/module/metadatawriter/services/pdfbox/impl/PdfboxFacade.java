@@ -59,8 +59,8 @@ public class PdfboxFacade implements ContentFacade {
         tempFile = TempFileProvider.createTempFile("metadatawriter_", ".pdf");
 
         _document.setAllSecurityToBeRemoved(true);
-
-        _document.save(tempFile);
+        
+        _document.save(tempFile.getAbsolutePath());
 
         reader = new PdfReader(tempFile.getAbsolutePath());
 
