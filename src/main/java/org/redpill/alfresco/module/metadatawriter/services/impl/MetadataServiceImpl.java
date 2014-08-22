@@ -51,7 +51,7 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
   private static final Logger LOG = Logger.getLogger(MetadataServiceImpl.class);
 
   private Map<QName, String> _metadataMapping;
-  private MetadataServiceRegistry _registry;
+  private MetadataServiceRegistry _metadataServiceRegistry;
   private MetadataContentFactory _metadataContentFactory;
   private NamespaceService _namespaceService;
   private String _serviceName;
@@ -76,13 +76,16 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
   private static final Object KEY_UPDATER = MetadataService.class.getName() + ".updater";
   private ExecutorService _executorService;
   private int _timeout = MetadataService.DEFAULT_TIMEOUT;
+  
+  public MetadataServiceImpl() {
+  }
 
   // ---------------------------------------------------
   // Public constructor
   // ---------------------------------------------------
-  public MetadataServiceImpl(final MetadataServiceRegistry registry, final MetadataContentFactory metadataContentFactory, final NamespaceService namespaceService,
+  public MetadataServiceImpl(final MetadataServiceRegistry metadataServiceRegistry, final MetadataContentFactory metadataContentFactory, final NamespaceService namespaceService,
       TransactionService transactionService, BehaviourFilter behaviourFilter, final NodeService nodeService, final ActionService actionService) {
-    _registry = registry;
+    _metadataServiceRegistry = metadataServiceRegistry;
     _metadataContentFactory = metadataContentFactory;
     _namespaceService = namespaceService;
     _transactionService = transactionService;
@@ -96,7 +99,7 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
   // ---------------------------------------------------
   public MetadataServiceImpl(final MetadataServiceRegistry registry, final MetadataContentFactory metadataContentFactory, final NamespaceService namespaceService,
       TransactionService transactionService, BehaviourFilter behaviourFilter, final Properties mappings, final String serviceName, final List<ValueConverter> converters, final NodeService nodeService) {
-    _registry = registry;
+    _metadataServiceRegistry = registry;
     _metadataContentFactory = metadataContentFactory;
     _namespaceService = namespaceService;
     _transactionService = transactionService;
@@ -134,6 +137,34 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
   public void setDeleteRenditions(boolean deleteRenditions) {
     _deleteRenditions = deleteRenditions;
   }
+  
+  public void setMetadataServiceRegistry(MetadataServiceRegistry metadataServiceRegistry) {
+    _metadataServiceRegistry = metadataServiceRegistry;
+  }
+  
+  public void setMetadataContentFactory(MetadataContentFactory metadataContentFactory) {
+    _metadataContentFactory = metadataContentFactory;
+  }
+  
+  public void setNamespaceService(NamespaceService namespaceService) {
+    _namespaceService = namespaceService;
+  }
+  
+  public void setTransactionService(TransactionService transactionService) {
+    _transactionService = transactionService;
+  }
+  
+  public void setBehaviourFilter(BehaviourFilter behaviourFilter) {
+    _behaviourFilter = behaviourFilter;
+  }
+  
+  public void setNodeService(NodeService nodeService) {
+    _nodeService = nodeService;
+  }
+  
+  public void setActionService(ActionService actionService) {
+    _actionService = actionService;
+  }
 
   // ---------------------------------------------------
   // Public methods
@@ -161,7 +192,7 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
   }
 
   public void register() {
-    _registry.register(this);
+    _metadataServiceRegistry.register(this);
   }
 
   // ---------------------------------------------------

@@ -10,6 +10,8 @@ import org.alfresco.repo.node.NodeServicePolicies.OnUpdatePropertiesPolicy;
 import org.alfresco.repo.policy.Behaviour;
 import org.alfresco.repo.policy.JavaBehaviour;
 import org.alfresco.repo.policy.PolicyComponent;
+import org.alfresco.repo.security.authentication.AuthenticationUtil;
+import org.alfresco.repo.security.authentication.AuthenticationUtil.RunAsWork;
 import org.alfresco.repo.version.VersionServicePolicies.AfterCreateVersionPolicy;
 import org.alfresco.service.cmr.lock.LockService;
 import org.alfresco.service.cmr.lock.LockType;
@@ -39,6 +41,8 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
 
   private LockService _lockService;
 
+  private boolean runAsSystem;
+
   public void setPolicyComponent(PolicyComponent policyComponent) {
     _policyComponent = policyComponent;
   }
@@ -55,13 +59,30 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
     _lockService = lockService;
   }
 
-  @Override
-  public void onUpdateProperties(final NodeRef nodeRef, final Map<QName, Serializable> before, final Map<QName, Serializable> after) {
+  public boolean getRunAs() {
+    return runAsSystem;
+  }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("onUpdateProperties for node " + nodeRef);
+  /*
+   * public void setRunAsSystem(boolean runAsSystem) { this.runAsSystem =
+   * runAsSystem; }
+   */
+
+  public void setRunAsSystem(String runAsSystem) {
+    if (runAsSystem != null && runAsSystem.equalsIgnoreCase("true")) {
+      this.runAsSystem = true;
+    } else {
+      this.runAsSystem = false;
     }
+    if (LOG.isInfoEnabled()) {
+      LOG.info("Run metadata as System user: " + this.runAsSystem);
+    }
+  }
 
+  /**
+   * Internal method @see onUpdateProperties
+   */
+  protected void _onUpdateProperties(final NodeRef nodeRef, final Map<QName, Serializable> before, final Map<QName, Serializable> after) {
     if (!_nodeService.exists(nodeRef)) {
       return;
     }
@@ -92,15 +113,28 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
     }
   }
 
-  /**
-   * After create version is needed to catch the "new" version label set.
-   */
   @Override
-  public void afterCreateVersion(final NodeRef versionableNode, final Version version) {
+  public void onUpdateProperties(final NodeRef nodeRef, final Map<QName, Serializable> before, final Map<QName, Serializable> after) {
     if (LOG.isDebugEnabled()) {
-      LOG.debug("afterCreateVersion " + version.getVersionLabel() + " for node " + versionableNode);
+      LOG.debug("onUpdateProperties for node " + nodeRef);
     }
+    if (runAsSystem) {
+      AuthenticationUtil.runAsSystem(new RunAsWork<Void>() {
+        @Override
+        public Void doWork() throws Exception {
+          _onUpdateProperties(nodeRef, before, after);
+          return null;
+        }
+      });
+    } else {
+      _onUpdateProperties(nodeRef, before, after);
+    }
+  }
 
+  /**
+   * Internal method @see afterCreateVersion
+   */
+  protected void _afterCreateVersion(final NodeRef versionableNode, final Version version) {
     if (!_nodeService.exists(versionableNode)) {
       return;
     }
@@ -122,15 +156,34 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
     verifyMetadataExportableNode(versionableNode, MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
 
     prepareWrite(versionableNode);
+  }
+
+  /**
+   * After create version is needed to catch the "new" version label set.
+   */
+  @Override
+  public void afterCreateVersion(final NodeRef versionableNode, final Version version) {
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("afterCreateVersion " + version.getVersionLabel() + " for node " + versionableNode);
+    }
+    if (runAsSystem) {
+      AuthenticationUtil.runAsSystem(new RunAsWork<Void>() {
+        @Override
+        public Void doWork() throws Exception {
+          _afterCreateVersion(versionableNode, version);
+          return null;
+        }
+      });
+    } else {
+      _afterCreateVersion(versionableNode, version);
+    }
 
   }
 
-  @Override
-  public void onAddAspect(final NodeRef nodeRef, final QName aspectTypeQName) {
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("onAddAspect " + aspectTypeQName.toPrefixString() + " for node " + nodeRef);
-    }
-
+  /**
+   * Internal method @see afterCreateVersion
+   */
+  protected void _onAddAspect(final NodeRef nodeRef, final QName aspectTypeQName) {
     if (!_nodeService.exists(nodeRef)) {
       return;
     }
@@ -155,6 +208,25 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
   }
 
   @Override
+  public void onAddAspect(final NodeRef nodeRef, final QName aspectTypeQName) {
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("onAddAspect " + aspectTypeQName.toPrefixString() + " for node " + nodeRef);
+    }
+
+    if (runAsSystem) {
+      AuthenticationUtil.runAsSystem(new RunAsWork<Void>() {
+        @Override
+        public Void doWork() throws Exception {
+          _onAddAspect(nodeRef, aspectTypeQName);
+          return null;
+        }
+      });
+    } else {
+      _onAddAspect(nodeRef, aspectTypeQName);
+    }
+  }
+
+  @Override
   public void afterPropertiesSet() throws Exception {
     _policyComponent.bindClassBehaviour(OnUpdatePropertiesPolicy.QNAME, MetadataWriterModel.ASPECT_METADATA_WRITEABLE, new JavaBehaviour(this, "onUpdateProperties",
         Behaviour.NotificationFrequency.TRANSACTION_COMMIT));
@@ -174,7 +246,6 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
     assert _nodeService.hasAspect(node, aspectQName) : "Node " + node + " does not have mandatory aspect " + aspectQName;
   }
 
-
   private void prepareWrite(final NodeRef node) {
 
     final String serviceName = (String) _nodeService.getProperty(node, MetadataWriterModel.PROP_METADATA_SERVICE_NAME);
@@ -192,7 +263,8 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
 
       metadataService.write(node);
     } catch (UnknownServiceNameException e) {
-      e.printStackTrace(); // To change body of catch statement use File | Settings | File Templates.
+      e.printStackTrace(); // To change body of catch statement use File |
+                           // Settings | File Templates.
     } catch (final MetadataService.UpdateMetadataException ume) {
       throw new AlfrescoRuntimeException("Could not write properties to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME), ume);
     } catch (Throwable t) {
@@ -212,7 +284,5 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
   private boolean propertiesUpdatedRequireExport(final Map<QName, Serializable> before, final Map<QName, Serializable> after) {
     return !before.equals(after);
   }
-
-
 
 }
