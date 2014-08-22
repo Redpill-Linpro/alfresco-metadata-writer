@@ -52,6 +52,7 @@
     <property name="nodeService" ref="NodeService" />
     <property name="policyComponent" ref="policyComponent" />
     <property name="lockService" ref="LockService" />
+    <property name="runAsSystem" value="${metadata-writer.runAsSystem}" />
   </bean>
 
   <!-- Metadata service abstract bean -->

@@ -1,5 +1,7 @@
 package org.redpill.alfresco.module.metadatawriter.aspect;
 
+import static org.junit.Assert.*;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
@@ -59,6 +61,7 @@ public class ExportMetadataAspectTest {
     aspect.setNodeService(nodeService);
     aspect.setPolicyComponent(policyComponent);
     aspect.setLockService(lockService);
+    aspect.setRunAsSystem("false");
   }
 
   @After
@@ -70,6 +73,22 @@ public class ExportMetadataAspectTest {
   // Public methods
   // ---------------------------------------------------
 
+  @Test
+  public void testSetRunAsSystem() {
+    //aspect.setRunAsSystem(true);
+    //assertEquals(true, aspect.getRunAsSystem());
+    //aspect.setRunAsSystem(false);
+    //assertEquals(false, aspect.getRunAsSystem());
+    aspect.setRunAsSystem("false");
+    assertEquals(false, aspect.getRunAs());
+    aspect.setRunAsSystem("true");
+    assertEquals(true, aspect.getRunAs());
+    aspect.setRunAsSystem("somethingotherthantrueorfalse");
+    assertEquals(false, aspect.getRunAs());
+    aspect.setRunAsSystem(null);
+    assertEquals(false, aspect.getRunAs());
+  }
+  
   @Test
   public void noExportForUnexistingNode() throws UnsupportedMimetypeException, UnknownServiceNameException, IOException, UpdateMetadataException {
     stubHasAspect(nodeRef, ContentModel.ASPECT_VERSIONABLE, true);
