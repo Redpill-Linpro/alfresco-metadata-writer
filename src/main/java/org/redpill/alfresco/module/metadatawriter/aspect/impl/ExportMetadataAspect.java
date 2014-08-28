@@ -1,6 +1,9 @@
 package org.redpill.alfresco.module.metadatawriter.aspect.impl;
 
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.alfresco.error.AlfrescoRuntimeException;
@@ -75,7 +78,7 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
       this.runAsSystem = false;
     }
     if (LOG.isInfoEnabled()) {
-      LOG.info("Run metadata as System user: " + this.runAsSystem);
+      LOG.info("Run metadatawriter as System user: " + this.runAsSystem);
     }
   }
 
@@ -118,6 +121,12 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
     if (LOG.isDebugEnabled()) {
       LOG.debug("onUpdateProperties for node " + nodeRef);
     }
+
+    if (LOG.isTraceEnabled()) {
+      LOG.trace("Before: " + before.toString());
+      LOG.trace("After: " + after.toString());
+    }
+
     if (runAsSystem) {
       AuthenticationUtil.runAsSystem(new RunAsWork<Void>() {
         @Override
@@ -282,7 +291,23 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
   // TODO: Should add black list of properties ignored in comparison to avoid
   // unnecessary updates
   private boolean propertiesUpdatedRequireExport(final Map<QName, Serializable> before, final Map<QName, Serializable> after) {
-    return !before.equals(after);
+    // Blacklist
+    final Map<QName, Serializable> beforeFiltered = new HashMap<QName, Serializable>();
+    final Map<QName, Serializable> afterFiltered = new HashMap<QName, Serializable>();
+    // TODO add option to add blacklisted properties by config
+    beforeFiltered.putAll(before);
+    afterFiltered.putAll(after);
+
+    // Blacklist thumbnail modification data property. This will otherwise cause
+    // uneccesary writes to content (observed when running metadatawrites as
+    // system, this will trigger errors on thumbnail generation)
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Blacklisting property "+ContentModel.PROP_LAST_THUMBNAIL_MODIFICATION_DATA+" from property updated comparison");
+    }
+    beforeFiltered.remove(ContentModel.PROP_LAST_THUMBNAIL_MODIFICATION_DATA);
+    afterFiltered.remove(ContentModel.PROP_LAST_THUMBNAIL_MODIFICATION_DATA);
+
+    return !beforeFiltered.equals(afterFiltered);
   }
 
 }
