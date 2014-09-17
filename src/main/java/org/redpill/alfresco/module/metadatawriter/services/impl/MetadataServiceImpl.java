@@ -390,6 +390,8 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
       } catch (TimeoutException e) {
         task.cancel(true);
 
+        LOG.warn(e.getMessage(), e);
+        
         throw new RuntimeException(e);
       } catch (InterruptedException e) {
         // We were asked to stop
