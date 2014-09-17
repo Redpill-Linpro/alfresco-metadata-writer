@@ -1,8 +1,6 @@
 package org.redpill.alfresco.module.metadatawriter.aspect.impl;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,6 +28,7 @@ import org.redpill.alfresco.module.metadatawriter.factories.UnknownServiceNameEx
 import org.redpill.alfresco.module.metadatawriter.model.MetadataWriterModel;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataService;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdatePropertiesPolicy, OnAddAspectPolicy, InitializingBean {
@@ -301,11 +300,16 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
     // Blacklist thumbnail modification data property. This will otherwise cause
     // uneccesary writes to content (observed when running metadatawrites as
     // system, this will trigger errors on thumbnail generation)
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Blacklisting property "+ContentModel.PROP_LAST_THUMBNAIL_MODIFICATION_DATA+" from property updated comparison");
+
+    // do this check in order for the code to backwards compatible with 4.1.x
+    if (ReflectionUtils.findField(ContentModel.class, "PROP_LAST_THUMBNAIL_MODIFICATION_DATA") != null) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Blacklisting property " + ContentModel.PROP_LAST_THUMBNAIL_MODIFICATION_DATA + " from property updated comparison");
+      }
+      
+      beforeFiltered.remove(ContentModel.PROP_LAST_THUMBNAIL_MODIFICATION_DATA);
+      afterFiltered.remove(ContentModel.PROP_LAST_THUMBNAIL_MODIFICATION_DATA);
     }
-    beforeFiltered.remove(ContentModel.PROP_LAST_THUMBNAIL_MODIFICATION_DATA);
-    afterFiltered.remove(ContentModel.PROP_LAST_THUMBNAIL_MODIFICATION_DATA);
 
     return !beforeFiltered.equals(afterFiltered);
   }
