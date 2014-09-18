@@ -19,7 +19,7 @@
   <artifactId>metadatawriter</artifactId>
   <packaging>jar</packaging>
   <name>Metadata Writer Framework</name>
-  <version>4.2.2.6</version>
+  <version>4.2.2.7</version>
 
   <dependencyManagement>
     <dependencies>
@@ -54,6 +54,13 @@
       <groupId>com.lowagie</groupId>
       <artifactId>itext</artifactId>
       <version>4.2.1</version>
+      <exclusions>
+        <!-- Exclude this since its already part of Alfresco -->
+        <exclusion>
+          <groupId>dom4j</groupId>
+          <artifactId>dom4j</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
   </dependencies>
