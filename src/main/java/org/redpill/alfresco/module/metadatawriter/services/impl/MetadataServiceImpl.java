@@ -31,6 +31,7 @@ import org.alfresco.service.namespace.NamespaceException;
 import org.alfresco.service.namespace.NamespaceService;
 import org.alfresco.service.namespace.QName;
 import org.alfresco.service.transaction.TransactionService;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.redpill.alfresco.module.metadatawriter.converters.ValueConverter;
 import org.redpill.alfresco.module.metadatawriter.factories.MetadataContentFactory;
@@ -65,18 +66,21 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
   private ActionService _actionService;
 
   /**
-   * Controls if existing renditions will be deleted after a successful metadata write. If renditions are not deleted
-   * they may not reflect the actual node content
    * Controls if existing renditions will be deleted after a successful metadata
    * write. If renditions are not deleted they may not reflect the actual node
-   * content
+   * content Controls if existing renditions will be deleted after a successful
+   * metadata write. If renditions are not deleted they may not reflect the
+   * actual node content
    */
   private boolean _deleteRenditions = false;
 
   private static final Object KEY_UPDATER = MetadataService.class.getName() + ".updater";
+  private static final Object KEY_FAIL_SILENTLY_ON_TIMEOUT = MetadataService.class.getName() + ".failSilently";
   private ExecutorService _executorService;
   private int _timeout = MetadataService.DEFAULT_TIMEOUT;
-  
+
+  private boolean _failSilentlyOnTimeout = false;
+
   public MetadataServiceImpl() {
   }
 
@@ -137,31 +141,39 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
   public void setDeleteRenditions(boolean deleteRenditions) {
     _deleteRenditions = deleteRenditions;
   }
-  
+
+  public void setFailSilentlyOnTimeout(String failSilentlyOnTimeout) {
+    if (LOG.isInfoEnabled()) {
+      LOG.info("Fail metadatawriter silently on timeout: " + failSilentlyOnTimeout);
+    }
+
+    _failSilentlyOnTimeout = StringUtils.isBlank(failSilentlyOnTimeout) ? false : failSilentlyOnTimeout.equalsIgnoreCase("true");
+  }
+
   public void setMetadataServiceRegistry(MetadataServiceRegistry metadataServiceRegistry) {
     _metadataServiceRegistry = metadataServiceRegistry;
   }
-  
+
   public void setMetadataContentFactory(MetadataContentFactory metadataContentFactory) {
     _metadataContentFactory = metadataContentFactory;
   }
-  
+
   public void setNamespaceService(NamespaceService namespaceService) {
     _namespaceService = namespaceService;
   }
-  
+
   public void setTransactionService(TransactionService transactionService) {
     _transactionService = transactionService;
   }
-  
+
   public void setBehaviourFilter(BehaviourFilter behaviourFilter) {
     _behaviourFilter = behaviourFilter;
   }
-  
+
   public void setNodeService(NodeService nodeService) {
     _nodeService = nodeService;
   }
-  
+
   public void setActionService(ActionService actionService) {
     _actionService = actionService;
   }
@@ -188,7 +200,7 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
 
     AlfrescoTransactionSupport.bindListener(_transactionListener);
     AlfrescoTransactionSupport.bindResource(KEY_UPDATER, new MetadataWriterUpdater(nodeRef, callback));
-
+    AlfrescoTransactionSupport.bindResource(KEY_FAIL_SILENTLY_ON_TIMEOUT, _failSilentlyOnTimeout);
   }
 
   public void register() {
@@ -374,7 +386,8 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
 
     @Override
     public void afterCommit() {
-      final MetadataWriterUpdater updater = AlfrescoTransactionSupport.getResource(KEY_UPDATER);
+      MetadataWriterUpdater updater = AlfrescoTransactionSupport.getResource(KEY_UPDATER);
+      boolean failSilentlyOnTimeout = AlfrescoTransactionSupport.getResource(KEY_FAIL_SILENTLY_ON_TIMEOUT);
 
       if (updater == null) {
         throw new Error("MetadataWriterUpdater was null after commit!");
@@ -391,8 +404,10 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
         task.cancel(true);
 
         LOG.warn(e.getMessage(), e);
-        
-        throw new RuntimeException(e);
+
+        if (!failSilentlyOnTimeout) {
+          throw new RuntimeException(e);
+        }
       } catch (InterruptedException e) {
         // We were asked to stop
         task.cancel(true);
@@ -400,8 +415,8 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
         return;
       } catch (ExecutionException e) {
         throw new RuntimeException(e);
+      }
     }
-  }
   }
 
   private class MetadataWriterUpdater implements Callable<Void> {
@@ -451,7 +466,7 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
       if (_callback != null) {
         _callback.execute();
       }
-      
+
       return null;
     }
 
@@ -483,7 +498,7 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
       deleteRenditionAction.setParameterValue(DeleteRenditionActionExecuter.PARAM_RENDITION_DEFINITION_NAME, renditionQName);
       _actionService.executeAction(deleteRenditionAction, _nodeRef);
     }
-    }
+  }
 
   @Override
   public void afterPropertiesSet() throws Exception {
