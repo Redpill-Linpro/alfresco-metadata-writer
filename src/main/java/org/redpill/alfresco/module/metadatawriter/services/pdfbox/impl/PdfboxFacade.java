@@ -8,34 +8,36 @@ import java.io.Serializable;
 import java.util.Calendar;
 import java.util.Date;
 
+import org.alfresco.service.cmr.repository.ContentIOException;
 import org.alfresco.util.TempFileProvider;
 import org.apache.commons.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
-import org.redpill.alfresco.module.metadatawriter.util.CopyInputStream;
 
 import com.lowagie.text.pdf.PdfReader;
 import com.lowagie.text.pdf.PdfStamper;
 
 public class PdfboxFacade implements ContentFacade {
 
-  private final CopyInputStream _inputStream;
+  private final InputStream _inputStream;
 
   private final OutputStream _outputStream;
 
   private PDDocument _document;
 
   public PdfboxFacade(final InputStream inputStream, final OutputStream outputStream) {
-    _inputStream = new CopyInputStream(inputStream);
-
-    _outputStream = outputStream;
+    if (inputStream == null) {
+      throw new ContentIOException("The input stream is null!");
+    }
 
     try {
-      _document = PDDocument.load(_inputStream.getCopy());
+      _inputStream = inputStream;
+
+      _outputStream = outputStream;
+
+      _document = PDDocument.load(inputStream);
     } catch (final IOException ex) {
       throw new RuntimeException(ex);
-    } finally {
-      IOUtils.closeQuietly(inputStream);
     }
   }
 
@@ -48,10 +50,12 @@ public class PdfboxFacade implements ContentFacade {
 
   @Override
   public void save() throws ContentException {
-    InputStream localInputStream = null;
     PdfReader reader = null;
+
     PdfStamper stamper = null;
+
     File tempFile = null;
+
     try {
       // Only save changes if the document is not encrypted, otherwise the
       // document will be corrupted.
@@ -59,7 +63,7 @@ public class PdfboxFacade implements ContentFacade {
         tempFile = TempFileProvider.createTempFile("metadatawriter_", ".pdf");
 
         _document.setAllSecurityToBeRemoved(true);
-        
+
         _document.save(tempFile.getAbsolutePath());
 
         reader = new PdfReader(tempFile.getAbsolutePath());
@@ -67,28 +71,31 @@ public class PdfboxFacade implements ContentFacade {
         reader.removeUsageRights();
 
         stamper = new PdfStamper(reader, _outputStream);
+        
         stamper.setFullCompression();
       } else {
         // Just copy the input stream to the output stream. With no changes
         // done.
-        localInputStream = _inputStream.getCopy();
-        IOUtils.copyLarge(localInputStream, _outputStream);
+        IOUtils.copyLarge(_inputStream, _outputStream);
       }
-
     } catch (final Exception ex) {
       throw new RuntimeException(ex);
     } finally {
       closeQuietly(stamper);
+
       closeQuietly(reader);
-      IOUtils.closeQuietly(localInputStream);
+
       IOUtils.closeQuietly(_outputStream);
+      
+      IOUtils.closeQuietly(_inputStream);
+
       closeQuietly(tempFile);
     }
   }
 
   @Override
   public void abort() throws ContentException {
-    // IOUtils.closeQuietly(_inputStream);
+    IOUtils.closeQuietly(_inputStream);
     IOUtils.closeQuietly(_outputStream);
   }
 
