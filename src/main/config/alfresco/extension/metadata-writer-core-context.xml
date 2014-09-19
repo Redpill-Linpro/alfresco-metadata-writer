@@ -68,6 +68,7 @@
     <property name="nodeVerifierProcessor" ref="metadata-writer.verifierProcessor" />
     <property name="timeout" value="${metadata-writer.default.timeout}" />
     <property name="deleteRenditions" value="true" />
+    <property name="failSilentlyOnTimeout" value="${metadata-writer.default.failSilentlyOnTimeout}"/>
   </bean>
 
   <bean id="metadata-writer.metadataProcessor" class="org.redpill.alfresco.module.metadatawriter.services.impl.DefaultMetadataProcessor">
