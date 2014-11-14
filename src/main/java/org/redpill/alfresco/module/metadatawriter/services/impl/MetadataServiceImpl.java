@@ -372,11 +372,18 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
         throw new AlfrescoRuntimeException("Could not write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME) + "( " + node + ")",
             ume);
       } else {
-        LOG.error("Could not write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME) + " (" + node + ")", ume);
+    	  LOG.warn("Failed to write metadata for node " + node.toString() + ", caused by " + ume.getMessage());
+          if(LOG.isDebugEnabled()) {
+       	    LOG.debug("Failed to write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME) + " (" + node + ")", ume);
+          }
       }
     } catch (final Exception ex) {
-      // catch the general error and log it
-      LOG.error("Could not write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME) + " (" + node + ")", ex);
+      
+      LOG.warn("Failed to write metadata for node " + node.toString() + ", caused by " + ex.getMessage());
+      if(LOG.isDebugEnabled()) {
+   	    LOG.debug("Failed to write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME) + " (" + node + ")", ex);
+      }
+      
     } finally {
       _behaviourFilter.enableBehaviour();
     }
