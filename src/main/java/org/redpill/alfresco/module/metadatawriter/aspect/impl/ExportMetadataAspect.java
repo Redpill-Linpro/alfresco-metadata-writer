@@ -121,7 +121,7 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
       LOG.debug("onUpdateProperties for node " + nodeRef);
     }
 
-    if (LOG.isTraceEnabled()) {
+    if (LOG.isTraceEnabled() && before != null && after != null) {
       LOG.trace("Before: " + before.toString());
       LOG.trace("After: " + after.toString());
     }
