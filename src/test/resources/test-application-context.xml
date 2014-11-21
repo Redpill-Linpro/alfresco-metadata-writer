@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+  <bean id="metadata-writer.test-service" class="org.redpill.alfresco.module.metadatawriter.services.impl.MetadataServiceImpl" init-method="register" parent="metadata-writer.abstract.service">
+    <property name="serviceName" value="vgr.metadata-writer.service" />
+    <property name="converters">
+      <list>
+        <ref bean="metadata-writer.test-dateConverter" />
+      </list>
+    </property>
+    <property name="mappings">
+      <props>
+        <prop key="Title">cm:title</prop>
+        <prop key="cm:name">cm:name</prop>
+        <prop key="sys:node-dbid">sys:node-dbid</prop>
+        <prop key="sys:store-identifier">sys:store-identifier</prop>
+        <prop key="sys:store-protocol">sys:store-protocol</prop>
+        <prop key="sys:locale">sys:locale</prop>
+        <prop key="cm:owner">cm:owner</prop>
+        <prop key="cm:modified">cm:modified</prop>
+        <prop key="cm:created">cm:created</prop>
+        <prop key="cm:creator">cm:creator</prop>
+        <prop key="cm:modifier">cm:modifier</prop>
+        <prop key="nodeRef">sys:node-uuid</prop>
+      </props>
+    </property>
+  </bean>
+
+  <bean id="metadata-writer.test-dateConverter" class="org.redpill.alfresco.module.metadatawriter.converters.impl.DateConverter">
+    <constructor-arg type="java.lang.String" value="yyyy-MM-dd" />
+  </bean>
+
+</beans>

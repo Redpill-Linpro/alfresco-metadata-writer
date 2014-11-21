@@ -39,12 +39,12 @@
       <groupId>${alfresco.groupId}</groupId>
       <artifactId>alfresco-repository</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>${alfresco.groupId}</groupId>
       <artifactId>alfresco-remote-api</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>org.jmock</groupId>
       <artifactId>jmock-junit4</artifactId>
@@ -63,6 +63,11 @@
       </exclusions>
     </dependency>
 
+    <dependency>
+      <groupId>org.redpill-linpro.alfresco</groupId>
+      <artifactId>alfresco-test-repo</artifactId>
+      <version>1.0.4-SNAPSHOT</version>
+    </dependency>
   </dependencies>
 
   <issueManagement>
