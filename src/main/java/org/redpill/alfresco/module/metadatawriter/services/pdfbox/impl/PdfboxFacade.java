@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.text.Normalizer;
+import java.text.Normalizer.Form;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -100,15 +102,15 @@ public class PdfboxFacade implements ContentFacade {
   }
 
   public void setAuthor(final String author) {
-    _document.getDocumentInformation().setAuthor(author);
+    _document.getDocumentInformation().setAuthor(Normalizer.normalize(author, Form.NFKC));
   }
 
   public void setTitle(final String title) {
-    _document.getDocumentInformation().setTitle(title);
+    _document.getDocumentInformation().setTitle(Normalizer.normalize(title, Form.NFKC));
   }
 
   public void setKeywords(final String keywords) {
-    _document.getDocumentInformation().setKeywords(keywords);
+    _document.getDocumentInformation().setKeywords(Normalizer.normalize(keywords, Form.NFKC));
   }
 
   public void setCreateDateTime(final Date date) {
@@ -120,7 +122,7 @@ public class PdfboxFacade implements ContentFacade {
   }
 
   public void setCustomMetadata(final String field, final String value) {
-    _document.getDocumentInformation().setCustomMetadataValue(field, value);
+    _document.getDocumentInformation().setCustomMetadataValue(field, Normalizer.normalize(value, Form.NFKC));
   }
 
   private void closeQuietly(PdfStamper stamper) {

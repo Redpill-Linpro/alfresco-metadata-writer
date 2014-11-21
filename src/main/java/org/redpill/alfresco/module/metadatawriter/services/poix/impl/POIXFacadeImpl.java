@@ -3,6 +3,8 @@ package org.redpill.alfresco.module.metadatawriter.services.poix.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.Normalizer;
+import java.text.Normalizer.Form;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -100,26 +102,26 @@ public class POIXFacadeImpl implements POIXFacade {
           continue;
         }
 
-        property.setLpwstr(value);
+        property.setLpwstr(Normalizer.normalize(value, Form.NFKC));
       }
     } else {
-      customProperties.addProperty(field, value);
+      customProperties.addProperty(field, Normalizer.normalize(value, Form.NFKC));
     }
   }
 
   @Override
-  public void setTitle(final String title) throws ContentException {
-    _document.getProperties().getCoreProperties().setTitle(title);
+  public void setTitle( String title) throws ContentException {
+    _document.getProperties().getCoreProperties().setTitle(Normalizer.normalize(title, Form.NFKC));
   }
 
   @Override
-  public void setAuthor(final String author) throws ContentException {
-    _document.getProperties().getCoreProperties().setCreator(author);
+  public void setAuthor( String author) throws ContentException {
+    _document.getProperties().getCoreProperties().setCreator(Normalizer.normalize(author, Form.NFKC));
   }
 
   @Override
-  public void setKeywords(final String keywords) throws ContentException {
-    _document.getProperties().getCoreProperties().setKeywords(keywords);
+  public void setKeywords( String keywords) throws ContentException {
+    _document.getProperties().getCoreProperties().setKeywords(Normalizer.normalize(keywords, Form.NFKC));
   }
 
   @Override
