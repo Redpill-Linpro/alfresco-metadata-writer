@@ -1,7 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 
-<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
-  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p" xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
 
   <bean id="metadata-writer.dictionaryBootstrap" parent="dictionaryModelBootstrap" depends-on="dictionaryBootstrap">
     <property name="models">
@@ -62,13 +61,13 @@
     <property name="namespaceService" ref="NamespaceService" />
     <property name="transactionService" ref="TransactionService" />
     <property name="behaviourFilter" ref="policyBehaviourFilter" />
-    <property name="nodeService" ref="NodeService"/>
-    <property name="actionService" ref="ActionService"/>
+    <property name="nodeService" ref="NodeService" />
+    <property name="actionService" ref="ActionService" />
     <property name="nodeMetadataProcessor" ref="metadata-writer.metadataProcessor" />
     <property name="nodeVerifierProcessor" ref="metadata-writer.verifierProcessor" />
     <property name="timeout" value="${metadata-writer.default.timeout}" />
     <property name="deleteRenditions" value="true" />
-    <property name="failSilentlyOnTimeout" value="${metadata-writer.default.failSilentlyOnTimeout}"/>
+    <property name="failSilentlyOnTimeout" value="${metadata-writer.default.failSilentlyOnTimeout}" />
   </bean>
 
   <bean id="metadata-writer.metadataProcessor" class="org.redpill.alfresco.module.metadatawriter.services.impl.DefaultMetadataProcessor">
@@ -79,6 +78,10 @@
     <constructor-arg type="org.alfresco.service.cmr.repository.NodeService" ref="NodeService" />
     <constructor-arg type="org.alfresco.service.cmr.lock.LockService" ref="LockService" />
     <constructor-arg type="org.alfresco.service.cmr.dictionary.DictionaryService" ref="DictionaryService" />
+    <constructor-arg type="org.alfresco.service.cmr.repository.ContentService" ref="ContentService" />
+    <property name="docxMaxSize" value="${metadata-writer.maxFileSize.docx}" />
+    <property name="xlsxMaxSize" value="${metadata-writer.maxFileSize.xlsx}" />
+    <property name="pptxMaxSize" value="${metadata-writer.maxFileSize.pptx}" />
   </bean>
 
 </beans>
