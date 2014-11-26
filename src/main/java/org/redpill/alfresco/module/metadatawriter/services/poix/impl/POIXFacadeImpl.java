@@ -54,6 +54,7 @@ public class POIXFacadeImpl implements POIXFacade {
     POIXMLDocument result = null;
 
     OPCPackage pkg;
+
     try {
       pkg = OPCPackage.open(in);
     } catch (final Exception ex) {
