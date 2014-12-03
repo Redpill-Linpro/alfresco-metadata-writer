@@ -13,10 +13,47 @@ import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade.ContentException;
 
-public class PdfboxFacadeIntegrationTest {
+public class PdfboxFacadeTest {
 
   @Test
-  public void test() {
+  public void testPdfWithForm() {
+    String filename = "test_form.pdf";
+    InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(filename);
+    
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    
+    PdfboxFacade facade = new PdfboxFacade(inputStream, outputStream);
+    
+    facade.setAuthor("John Smith");
+    
+    try {
+      facade.save();
+    } catch (ContentException ex) {
+      ex.printStackTrace();
+      
+      fail();
+    }
+    
+    File tempFile = TempFileProvider.createTempFile("PdfboxFacadeITest_form", ".pdf");
+    
+    try {
+      FileUtils.writeByteArrayToFile(tempFile, outputStream.toByteArray());
+      
+      long originalFileLength = IOUtils.toByteArray(Thread.currentThread().getContextClassLoader().getResourceAsStream(filename)).length;
+      long newFileLength = tempFile.length();
+      
+      assertTrue(originalFileLength == newFileLength);
+    } catch (IOException ex1) {
+      ex1.printStackTrace();
+      
+      fail();
+    } finally {
+      tempFile.delete();
+    }
+  }
+  
+  @Test
+  public void testPdfWithoutForm() {
     String filename = "test.pdf";
     InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(filename);
     
@@ -34,7 +71,7 @@ public class PdfboxFacadeIntegrationTest {
       fail();
     }
     
-    File tempFile = TempFileProvider.createTempFile("PdfboxFacadeIntegrationTest", ".pdf");
+    File tempFile = TempFileProvider.createTempFile("PdfboxFacadeITest_form", ".pdf");
     
     try {
       FileUtils.writeByteArrayToFile(tempFile, outputStream.toByteArray());
