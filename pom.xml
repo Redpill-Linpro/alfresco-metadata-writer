@@ -10,7 +10,7 @@
 
   <properties>
     <alfresco.groupId>org.alfresco</alfresco.groupId>
-    <alfresco.version>4.2.3.3</alfresco.version>
+    <alfresco.version>4.2.4</alfresco.version>
     <java.source.version>1.6</java.source.version>
     <java.target.version>1.6</java.target.version>
   </properties>
@@ -19,7 +19,7 @@
   <artifactId>metadatawriter</artifactId>
   <packaging>jar</packaging>
   <name>Metadata Writer Framework</name>
-  <version>4.2.2.13-SNAPSHOT</version>
+  <version>4.2.4</version>
 
   <dependencyManagement>
     <dependencies>
@@ -66,7 +66,8 @@
     <dependency>
       <groupId>org.redpill-linpro.alfresco</groupId>
       <artifactId>alfresco-test-repo</artifactId>
-      <version>1.0.4-SNAPSHOT</version>
+      <version>1.0.4</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
