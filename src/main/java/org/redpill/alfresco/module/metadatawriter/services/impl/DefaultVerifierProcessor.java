@@ -78,6 +78,12 @@ public class DefaultVerifierProcessor implements NodeVerifierProcessor, Initiali
     // Check for OOXML formats size limit
 
     ContentReader reader = _contentService.getReader(node, ContentModel.PROP_CONTENT);
+    if (reader == null) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Node " + node + " has no conent");
+      }
+      return false;
+    }
     String mimetype = reader.getMimetype();
     long size = reader.getSize();
     if (MimetypeMap.MIMETYPE_OPENXML_WORDPROCESSING.equalsIgnoreCase(mimetype) && size > docxMaxSize) {
