@@ -1,0 +1,3 @@
+A general purpose framework for writing metadata. Provides an implementation for writing properties to MS Office (doc/docx, ppt/pptx and xls/xlsx) and PDF documents. Sponsors: Jönköpings kommun (www.jonkoping.se) Danisco A/S (www.danisco.com), Västra Götalandsregionen (www.vgregion.se), Capio S:t Görans Sjukhus (www.capiostgoran.se) and Redpill Linpro AB (www.redpill-linpro.com).
+
+The distribution method has changed in the last version. The package is now a jar file instead of an amp. Drop all the incldued jar files in alfresco/WEB-INF/lib and all should work fine.
