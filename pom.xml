@@ -11,15 +11,15 @@
   <properties>
     <alfresco.groupId>org.alfresco</alfresco.groupId>
     <alfresco.version>4.2.4</alfresco.version>
-    <java.source.version>1.6</java.source.version>
-    <java.target.version>1.6</java.target.version>
+    <java.source.version>1.7</java.source.version>
+    <java.target.version>1.7</java.target.version>
   </properties>
 
   <groupId>org.redpill-linpro.alfresco.module</groupId>
   <artifactId>metadatawriter</artifactId>
   <packaging>jar</packaging>
   <name>Metadata Writer Framework</name>
-  <version>4.2.5</version>
+  <version>4.2.5-SNAPSHOT</version>
 
   <dependencyManagement>
     <dependencies>
