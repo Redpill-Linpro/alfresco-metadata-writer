@@ -42,6 +42,7 @@ public class PdfWriterApp {
       metadata.put("Title", "this is a title");
       metadata.put("Niklas", "Ekman");
       metadata.put("DC:identifier.documentid", "this is an id");
+      metadata.put("Keywords", "This is nice keywords");
 
       for (Map.Entry<String, Serializable> m : metadata.entrySet()) {
         facade.writeMetadata(m.getKey(), m.getValue());

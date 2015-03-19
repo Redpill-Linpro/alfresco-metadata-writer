@@ -2,6 +2,7 @@ package org.redpill.alfresco.module.metadatawriter.services.pdfbox.impl;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -13,6 +14,7 @@ import java.util.Date;
 import org.alfresco.service.cmr.repository.ContentIOException;
 import org.alfresco.util.TempFileProvider;
 import org.apache.commons.io.IOUtils;
+import org.apache.jempbox.xmp.XMPMetadata;
 import org.apache.log4j.Logger;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
@@ -32,6 +34,8 @@ public class PdfboxFacade implements ContentFacade {
 
   private PDDocument _document;
 
+  private XMPMetadata _xmpMetadata;
+
   private File tempFile, tempFile2;
 
   public PdfboxFacade(InputStream inputStream, OutputStream outputStream) {
@@ -47,6 +51,10 @@ public class PdfboxFacade implements ContentFacade {
       tempFile = TempFileProvider.createTempFile(_inputStream, "metadatawriter_", ".pdf");
       tempInputStream = new FileInputStream(tempFile);
       _document = PDDocument.load(tempFile);
+
+      // load the XMP metadata, this must be to set the title in both XMP
+      // metadata and regular PDF metadata
+      loadXmpMetadata();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -73,11 +81,13 @@ public class PdfboxFacade implements ContentFacade {
       // Only save changes if the document is not encrypted, otherwise the
       // document will be corrupted.
       boolean copyOriginal = false;
-      
+
       if (!_document.isEncrypted()) {
         tempFile2 = TempFileProvider.createTempFile(tempInputStream, "metadatawriter2_", ".pdf");
 
         _document.setAllSecurityToBeRemoved(true);
+
+        saveXmpMetadata();
 
         _document.save(tempFile2.getAbsolutePath());
 
@@ -119,6 +129,22 @@ public class PdfboxFacade implements ContentFacade {
     }
   }
 
+  private void loadXmpMetadata() {
+    try {
+      _xmpMetadata = _document.getDocumentCatalog().getMetadata().exportXMPMetadata();
+    } catch (Throwable ex) {
+      return;
+    }
+  }
+
+  private void saveXmpMetadata() {
+    try {
+      _document.getDocumentCatalog().getMetadata().importXMPMetadata(_xmpMetadata);
+    } catch (Throwable ex) {
+      return;
+    }
+  }
+
   @Override
   public void abort() throws ContentException {
     IOUtils.closeQuietly(_inputStream);
@@ -129,8 +155,21 @@ public class PdfboxFacade implements ContentFacade {
     _document.getDocumentInformation().setAuthor(Normalizer.normalize(author, Form.NFKC));
   }
 
+  /**
+   * Sets the title for the PDF.
+   * 
+   * @param title
+   */
   public void setTitle(String title) {
     _document.getDocumentInformation().setTitle(Normalizer.normalize(title, Form.NFKC));
+
+    try {
+      if (_xmpMetadata != null) {
+        _xmpMetadata.getDublinCoreSchema().setTitle(title);
+      }
+    } catch (IOException ex) {
+      throw new RuntimeException(ex);
+    }
   }
 
   public void setKeywords(String keywords) {
