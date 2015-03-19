@@ -14,17 +14,17 @@ public class POIXContentFacade implements ContentFacade {
 
   private static final Log LOG = LogFactory.getLog(POIXContentFacade.class);
 
-  private final POIXFacade _poixFacade;
+  private POIXFacade _poixFacade;
 
   // ---------------------------------------------------
   // Public constructor
   // ---------------------------------------------------
-  public POIXContentFacade(final InputStream in, final OutputStream out) throws IOException {
+  public POIXContentFacade(InputStream in, OutputStream out) throws IOException {
     _poixFacade = new POIXFacadeImpl(in, out);
   }
 
   // For unit testing purposes
-  protected POIXContentFacade(final POIXFacade poixFacade) {
+  protected POIXContentFacade(POIXFacade poixFacade) {
     _poixFacade = poixFacade;
   }
 
@@ -39,7 +39,7 @@ public class POIXContentFacade implements ContentFacade {
 
     try {
       _poixFacade.writeProperties();
-    } catch (final IOException e) {
+    } catch (IOException e) {
       throw new ContentException("Could not save metadata", e);
     }
   }
@@ -48,22 +48,22 @@ public class POIXContentFacade implements ContentFacade {
   public void abort() throws ContentException {
     try {
       _poixFacade.close();
-    } catch (final IOException ioe) {
+    } catch (IOException ioe) {
       throw new ContentException("Unable to abort the POIXFacade!", ioe);
     }
   }
 
   @Override
-  public void writeMetadata(final String field, final Serializable value) throws ContentException {
+  public void writeMetadata(String field, Serializable value) throws ContentException {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Exporting metadata " + field + " with value " + value);
     }
 
-    final POIXMetadata metadata = POIXMetadata.find(field);
+    POIXMetadata metadata = POIXMetadata.find(field);
 
     try {
       metadata.update(field, value, _poixFacade);
-    } catch (final ContentException e) {
+    } catch (ContentException e) {
       throw new ContentException("Could not export metadata " + field + " with value " + value, e);
     }
   }

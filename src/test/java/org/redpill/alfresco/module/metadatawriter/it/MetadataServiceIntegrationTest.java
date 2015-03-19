@@ -77,6 +77,24 @@ public class MetadataServiceIntegrationTest extends AbstractRepoIntegrationTest 
   }
 
   @Test
+  public void testWritePdfa() throws ContentIOException, IOException, COSVisitorException {
+    NodeRef document = doTestWrite("test_pdfa.pdf");
+
+    ContentReader reader = _contentService.getReader(document, ContentModel.PROP_CONTENT);
+
+    PDDocument pdfDocument = PDDocument.load(reader.getContentInputStream());
+
+    pdfDocument.save("/tmp/test_pdfa.pdf");
+
+    try {
+      assertEquals("This is a test öäåÖÄÅ", pdfDocument.getDocumentInformation().getTitle());
+      assertEquals("test_pdfa.pdf", pdfDocument.getDocumentInformation().getCustomMetadataValue("cm:name"));
+    } finally {
+      pdfDocument.close();
+    }
+  }
+
+  @Test
   public void testWriteDoc() throws ContentIOException, IOException, ContentException, UnexpectedPropertySetTypeException {
     doTestWrite("test.doc");
     
