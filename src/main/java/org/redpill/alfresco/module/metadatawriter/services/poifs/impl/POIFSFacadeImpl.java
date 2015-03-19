@@ -31,11 +31,11 @@ import org.redpill.alfresco.module.metadatawriter.services.poifs.POIFSFacade;
 
 public class POIFSFacadeImpl implements POIFSFacade {
 
-  private static final Log logger = LogFactory.getLog(POIFSFacadeImpl.class);
+  private static Log logger = LogFactory.getLog(POIFSFacadeImpl.class);
 
-  private final POIFSFileSystem fileSystem;
-  private final OutputStream out;
-  private final InputStream in;
+  private POIFSFileSystem fileSystem;
+  private OutputStream out;
+  private InputStream in;
   private DocumentSummaryInformation dsi;
   private SummaryInformation si;
 
@@ -43,7 +43,7 @@ public class POIFSFacadeImpl implements POIFSFacade {
   // Public constructor
   // ---------------------------------------------------
 
-  public POIFSFacadeImpl(final InputStream in, final OutputStream out) throws IOException {
+  public POIFSFacadeImpl(InputStream in, OutputStream out) throws IOException {
 
     if (in == null) {
       throw new IOException("Could not create POIFSFileSystem from null InputStream!");
@@ -114,9 +114,9 @@ public class POIFSFacadeImpl implements POIFSFacade {
 
   /*
    * 
-   * private static String describe(final CustomProperties p) { final
-   * StringBuilder sb = new StringBuilder(); for (final Object key : p.keySet())
-   * { sb.append("\n\t" + key + "=" + p.get(key)); }
+   * private static String describe( CustomProperties p) { StringBuilder sb =
+   * new StringBuilder(); for ( Object key : p.keySet()) { sb.append("\n\t" +
+   * key + "=" + p.get(key)); }
    * 
    * return sb.toString();
    * 
@@ -158,7 +158,7 @@ public class POIFSFacadeImpl implements POIFSFacade {
   private SummaryInformation getSummaryInformation() throws ContentException {
     if (null == si) {
       try {
-        final PropertySet ps = createPropertySet(SummaryInformation.DEFAULT_STREAM_NAME);
+        PropertySet ps = createPropertySet(SummaryInformation.DEFAULT_STREAM_NAME);
         si = new SummaryInformation(ps);
       } catch (FileNotFoundException fnf) {
         logger.debug("Summary information does not exist in file, creating new!");
@@ -196,12 +196,12 @@ public class POIFSFacadeImpl implements POIFSFacade {
     return dsi;
   }
 
-  public static PropertySet createPropertySet(final String streamName, POIFSFileSystem fileSystem) throws ContentException, FileNotFoundException {
+  public static PropertySet createPropertySet(String streamName, POIFSFileSystem fileSystem) throws ContentException, FileNotFoundException {
     try {
-      final DirectoryEntry dir = fileSystem.getRoot();
-      final DocumentEntry dsiEntry = (DocumentEntry) dir.getEntry(streamName);
-      final DocumentInputStream dis = new DocumentInputStream(dsiEntry);
-      final PropertySet ps = new PropertySet(dis);
+      DirectoryEntry dir = fileSystem.getRoot();
+      DocumentEntry dsiEntry = (DocumentEntry) dir.getEntry(streamName);
+      DocumentInputStream dis = new DocumentInputStream(dsiEntry);
+      PropertySet ps = new PropertySet(dis);
       dis.close();
       return ps;
     } catch (NoPropertySetStreamException e) {
@@ -215,7 +215,7 @@ public class POIFSFacadeImpl implements POIFSFacade {
     }
   }
 
-  private PropertySet createPropertySet(final String streamName) throws ContentException, FileNotFoundException {
+  private PropertySet createPropertySet(String streamName) throws ContentException, FileNotFoundException {
     POIFSFileSystem fileSystem;
 
     try {

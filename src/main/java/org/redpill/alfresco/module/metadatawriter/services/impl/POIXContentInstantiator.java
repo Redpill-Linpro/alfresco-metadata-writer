@@ -1,6 +1,8 @@
 package org.redpill.alfresco.module.metadatawriter.services.impl;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import org.alfresco.repo.content.MimetypeMap;
 import org.alfresco.service.cmr.repository.ContentReader;
@@ -11,46 +13,48 @@ import org.redpill.alfresco.module.metadatawriter.services.poix.impl.POIXContent
 
 public class POIXContentInstantiator {
 
+  public static abstract class AbstractMSWordContentInstantiator implements MetadataContentInstantiator {
+
+    @Override
+    public ContentFacade create(InputStream inputStream, OutputStream outputStream) throws IOException {
+      return new POIXContentFacade(inputStream, outputStream);
+    }
+
+    @Override
+    public ContentFacade create(ContentReader reader, ContentWriter writer) throws IOException {
+      return create(reader.getContentInputStream(), writer.getContentOutputStream());
+    }
+
+  }
+
   // ---------------------------------------------------
   // Public classes
   // ---------------------------------------------------
-  public static class MSWordContentInstantiator implements MetadataContentInstantiator {
+  public static class MSWordContentInstantiator extends AbstractMSWordContentInstantiator {
 
     @Override
-    public boolean supports(final String mimetype) {
+    public boolean supports(String mimetype) {
       return MimetypeMap.MIMETYPE_OPENXML_WORDPROCESSING.equalsIgnoreCase(mimetype);
     }
 
-    @Override
-    public ContentFacade create(final ContentReader reader, final ContentWriter writer) throws IOException {
-      return new POIXContentFacade(reader.getContentInputStream(), writer.getContentOutputStream());
-    }
   }
 
-  public static class MSExcelContentInstantiator implements MetadataContentInstantiator {
+  public static class MSExcelContentInstantiator extends AbstractMSWordContentInstantiator {
 
     @Override
-    public boolean supports(final String mimetype) {
+    public boolean supports(String mimetype) {
       return MimetypeMap.MIMETYPE_OPENXML_SPREADSHEET.equalsIgnoreCase(mimetype);
     }
 
-    @Override
-    public ContentFacade create(final ContentReader reader, final ContentWriter writer) throws IOException {
-      return new POIXContentFacade(reader.getContentInputStream(), writer.getContentOutputStream());
-    }
   }
 
-  public static class MSPowerPointContentInstantiator implements MetadataContentInstantiator {
+  public static class MSPowerPointContentInstantiator extends AbstractMSWordContentInstantiator {
 
     @Override
-    public boolean supports(final String mimetype) {
+    public boolean supports(String mimetype) {
       return MimetypeMap.MIMETYPE_OPENXML_PRESENTATION.equalsIgnoreCase(mimetype);
     }
 
-    @Override
-    public ContentFacade create(final ContentReader reader, final ContentWriter writer) throws IOException {
-      return new POIXContentFacade(reader.getContentInputStream(), writer.getContentOutputStream());
-    }
   }
 
 }
