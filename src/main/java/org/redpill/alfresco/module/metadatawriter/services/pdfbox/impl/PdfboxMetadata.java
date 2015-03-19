@@ -19,7 +19,7 @@ public enum PdfboxMetadata {
 
     @Override
     public void update(final String field, final Serializable value, final PdfboxFacade facade) {
-      facade.setTitle((String) value);
+      facade.setTitle(value != null ? value.toString() : null);
     }
 
   }), KEYWORDS("Keywords", new FieldUpdateSpecification() {

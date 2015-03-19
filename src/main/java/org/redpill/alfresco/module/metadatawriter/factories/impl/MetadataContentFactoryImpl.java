@@ -1,6 +1,8 @@
 package org.redpill.alfresco.module.metadatawriter.factories.impl;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Set;
 
 import org.alfresco.model.ContentModel;
@@ -9,6 +11,7 @@ import org.alfresco.service.cmr.repository.ContentReader;
 import org.alfresco.service.cmr.repository.ContentService;
 import org.alfresco.service.cmr.repository.ContentWriter;
 import org.alfresco.service.cmr.repository.NodeRef;
+import org.alfresco.util.ParameterCheck;
 import org.redpill.alfresco.module.metadatawriter.factories.MetadataContentFactory;
 import org.redpill.alfresco.module.metadatawriter.factories.UnsupportedMimetypeException;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
@@ -17,13 +20,13 @@ import org.springframework.util.StringUtils;
 
 public class MetadataContentFactoryImpl implements MetadataContentFactory {
 
-  private final ContentService _contentService;
-  private final Set<MetadataContentInstantiator> _instantiators;
+  private ContentService _contentService;
+  private Set<MetadataContentInstantiator> _instantiators;
 
   // ---------------------------------------------------
   // Public constructor
   // ---------------------------------------------------
-  public MetadataContentFactoryImpl(final ContentService contentService, final Set<MetadataContentInstantiator> metadataContentInstantiators) {
+  public MetadataContentFactoryImpl(ContentService contentService, Set<MetadataContentInstantiator> metadataContentInstantiators) {
     assert null != contentService;
     _contentService = contentService;
     _instantiators = metadataContentInstantiators;
@@ -33,16 +36,16 @@ public class MetadataContentFactoryImpl implements MetadataContentFactory {
   // Public methods
   // ---------------------------------------------------
   @Override
-  public ContentFacade createContent(final NodeRef contentNode) throws UnsupportedMimetypeException, IOException {
+  public ContentFacade createContent(NodeRef contentNode) throws UnsupportedMimetypeException, IOException {
     assert null != contentNode;
 
-    final String mimetype = findMimetype(getContentReader(contentNode));
+    String mimetype = findMimetype(getContentReader(contentNode));
 
     if (!StringUtils.hasText(mimetype)) {
       throw new ContentIOException("Mimetype not specified for node " + contentNode);
     }
 
-    final MetadataContentInstantiator instantiator = getMetadataContentInstantiator(mimetype);
+    MetadataContentInstantiator instantiator = getMetadataContentInstantiator(mimetype);
 
     if (instantiator == null) {
       throw new UnsupportedMimetypeException("This MetadataContentFactory does not support mimetype " + mimetype);
@@ -52,10 +55,23 @@ public class MetadataContentFactoryImpl implements MetadataContentFactory {
   }
 
   @Override
-  public boolean supportsMetadataWrite(final NodeRef contentNode) {
+  public ContentFacade createContent(InputStream inputStream, OutputStream outputStream, String mimetype) throws UnsupportedMimetypeException, IOException {
+    ParameterCheck.mandatory("mimetype", mimetype);
+
+    MetadataContentInstantiator instantiator = getMetadataContentInstantiator(mimetype);
+
+    if (instantiator == null) {
+      throw new UnsupportedMimetypeException("This MetadataContentFactory does not support mimetype " + mimetype);
+    }
+
+    return instantiator.create(inputStream, outputStream);
+  }
+
+  @Override
+  public boolean supportsMetadataWrite(NodeRef contentNode) {
     assert null != contentNode;
 
-    final String mimetype = findMimetype(getContentReader(contentNode));
+    String mimetype = findMimetype(getContentReader(contentNode));
 
     if (!StringUtils.hasText(mimetype)) {
       return false;
@@ -64,8 +80,8 @@ public class MetadataContentFactoryImpl implements MetadataContentFactory {
     return getMetadataContentInstantiator(mimetype) != null;
   }
 
-  private MetadataContentInstantiator getMetadataContentInstantiator(final String mimetype) {
-    for (final MetadataContentInstantiator instantiator : _instantiators) {
+  private MetadataContentInstantiator getMetadataContentInstantiator(String mimetype) {
+    for (MetadataContentInstantiator instantiator : _instantiators) {
       if (instantiator.supports(mimetype)) {
         return instantiator;
       }
@@ -77,7 +93,7 @@ public class MetadataContentFactoryImpl implements MetadataContentFactory {
   // ---------------------------------------------------
   // Private methods
   // ---------------------------------------------------
-  private static String findMimetype(final ContentReader contentReader) {
+  private static String findMimetype(ContentReader contentReader) {
     if (null == contentReader) {
       throw new ContentIOException("ContentReader must be supplied!");
     }
@@ -85,8 +101,8 @@ public class MetadataContentFactoryImpl implements MetadataContentFactory {
     return contentReader.getMimetype();
   }
 
-  private ContentReader getContentReader(final NodeRef contentNode) {
-    final ContentReader reader = _contentService.getReader(contentNode, ContentModel.PROP_CONTENT);
+  private ContentReader getContentReader(NodeRef contentNode) {
+    ContentReader reader = _contentService.getReader(contentNode, ContentModel.PROP_CONTENT);
 
     // The reader may be null, e.g. for folders and the like
     if (reader == null || !reader.exists()) {
@@ -96,8 +112,8 @@ public class MetadataContentFactoryImpl implements MetadataContentFactory {
     return reader;
   }
 
-  private ContentWriter getContentWriter(final NodeRef contentNode) {
-    final ContentWriter writer = _contentService.getWriter(contentNode, ContentModel.PROP_CONTENT, true);
+  private ContentWriter getContentWriter(NodeRef contentNode) {
+    ContentWriter writer = _contentService.getWriter(contentNode, ContentModel.PROP_CONTENT, true);
 
     if (writer == null) {
       throw new ContentIOException("Could not get ContentWriter from node " + contentNode);

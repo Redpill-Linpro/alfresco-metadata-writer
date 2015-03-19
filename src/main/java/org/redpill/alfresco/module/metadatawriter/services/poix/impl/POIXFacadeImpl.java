@@ -27,17 +27,17 @@ public class POIXFacadeImpl implements POIXFacade {
 
   private static final Log LOG = LogFactory.getLog(POIXFacadeImpl.class);
 
-  private final OutputStream _out;
+  private OutputStream _out;
 
-  private final InputStream _in;
+  private InputStream _in;
 
-  private final POIXMLDocument _document;
+  private POIXMLDocument _document;
 
   // ---------------------------------------------------
   // Public constructor
   // ---------------------------------------------------
 
-  public POIXFacadeImpl(final InputStream in, final OutputStream out) throws IOException {
+  public POIXFacadeImpl(InputStream in, OutputStream out) throws IOException {
     Assert.notNull(in, "Could not create OpcPackage from null InputStream!");
 
     _out = out;
@@ -50,20 +50,20 @@ public class POIXFacadeImpl implements POIXFacade {
   // Public methods
   // ---------------------------------------------------
 
-  private static POIXMLDocument loadPOIXMLDocument(final InputStream in) {
+  private static POIXMLDocument loadPOIXMLDocument(InputStream in) {
     POIXMLDocument result = null;
 
     OPCPackage pkg;
 
     try {
       pkg = OPCPackage.open(in);
-    } catch (final Exception ex) {
+    } catch (Exception ex) {
       throw new RuntimeException(ex);
     }
 
     try {
       result = new XWPFDocument(pkg);
-    } catch (final Exception ex) {
+    } catch (Exception ex) {
     }
 
     if (result != null) {
@@ -72,7 +72,7 @@ public class POIXFacadeImpl implements POIXFacade {
 
     try {
       result = new XSLFSlideShow(pkg);
-    } catch (final Exception ex) {
+    } catch (Exception ex) {
     }
 
     if (result != null) {
@@ -81,24 +81,24 @@ public class POIXFacadeImpl implements POIXFacade {
 
     try {
       result = new XSSFWorkbook(pkg);
-    } catch (final Exception ex) {
+    } catch (Exception ex) {
     }
 
     return result;
   }
 
   @Override
-  public void setCustomMetadata(final String field, final String value) throws ContentException {
+  public void setCustomMetadata(String field, String value) throws ContentException {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Exporting metadata " + field + "=" + value);
     }
 
-    final CustomProperties customProperties = _document.getProperties().getCustomProperties();
+    CustomProperties customProperties = _document.getProperties().getCustomProperties();
 
     if (customProperties.contains(field)) {
-      final List<CTProperty> properties = customProperties.getUnderlyingProperties().getPropertyList();
+      List<CTProperty> properties = customProperties.getUnderlyingProperties().getPropertyList();
 
-      for (final CTProperty property : properties) {
+      for (CTProperty property : properties) {
         if (!property.getName().equalsIgnoreCase(field)) {
           continue;
         }
@@ -111,26 +111,26 @@ public class POIXFacadeImpl implements POIXFacade {
   }
 
   @Override
-  public void setTitle( String title) throws ContentException {
+  public void setTitle(String title) throws ContentException {
     _document.getProperties().getCoreProperties().setTitle(Normalizer.normalize(title, Form.NFKC));
   }
 
   @Override
-  public void setAuthor( String author) throws ContentException {
+  public void setAuthor(String author) throws ContentException {
     _document.getProperties().getCoreProperties().setCreator(Normalizer.normalize(author, Form.NFKC));
   }
 
   @Override
-  public void setKeywords( String keywords) throws ContentException {
+  public void setKeywords(String keywords) throws ContentException {
     _document.getProperties().getCoreProperties().setKeywords(Normalizer.normalize(keywords, Form.NFKC));
   }
 
   @Override
-  public void setCreateDateTime(final Date dateTime) throws ContentException {
+  public void setCreateDateTime(Date dateTime) throws ContentException {
     // this is the proper format for this field
-    final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
-    final String date = formatter.format(dateTime);
+    String date = formatter.format(dateTime);
 
     _document.getProperties().getCoreProperties().setCreated(date);
   }

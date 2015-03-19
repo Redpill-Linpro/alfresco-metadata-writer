@@ -16,15 +16,16 @@ public class PdfWriterApp {
   public static void main(final String[] args) {
     assert args.length == 2 : "Must provide input and output files!";
 
-    final String sourceFileName = args[0];
-    final String targetFileName = args[1];
+    String sourceFileName = args[0];
+    String targetFileName = args[1];
 
-    final File sourceFile = new File(sourceFileName);
+    File sourceFile = new File(sourceFileName);
 
-    final File targetFile = new File(targetFileName);
+    File targetFile = new File(targetFileName);
 
     if (!sourceFile.equals(targetFile)) {
       sourceFile.setReadOnly();
+      targetFile.delete();
     }
 
     InputStream in = null;
@@ -33,21 +34,22 @@ public class PdfWriterApp {
     try {
       in = new FileInputStream(sourceFile);
       out = new FileOutputStream(targetFile);
+      
+      PdfboxFacade facade = new PdfboxFacade(in, out);
 
-      final PdfboxFacade facade = new PdfboxFacade(in, out);
-
-      final Map<String, Serializable> metadata = new LinkedHashMap<String, Serializable>();
+      Map<String, Serializable> metadata = new LinkedHashMap<String, Serializable>();
 
       metadata.put("Title", "this is a title");
       metadata.put("Niklas", "Ekman");
       metadata.put("DC:identifier.documentid", "this is an id");
+      metadata.put("Keywords", "This is nice keywords");
 
-      for (final Map.Entry<String, Serializable> m : metadata.entrySet()) {
+      for (Map.Entry<String, Serializable> m : metadata.entrySet()) {
         facade.writeMetadata(m.getKey(), m.getValue());
       }
 
       facade.save();
-    } catch (final Exception ex) {
+    } catch (Exception ex) {
       throw new RuntimeException(ex);
     }
   }
