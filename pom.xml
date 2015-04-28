@@ -5,12 +5,12 @@
   <parent>
     <groupId>com.redpill-linpro.alfresco</groupId>
     <artifactId>alfresco-base</artifactId>
-    <version>1.1.1.7</version>
+    <version>1.1.1.9</version>
   </parent>
 
   <properties>
     <alfresco.groupId>org.alfresco</alfresco.groupId>
-    <alfresco.version>4.2.4</alfresco.version>
+    <alfresco.version>4.2.e</alfresco.version>
     <java.source.version>1.7</java.source.version>
     <java.target.version>1.7</java.target.version>
   </properties>
@@ -19,22 +19,9 @@
   <artifactId>metadatawriter</artifactId>
   <packaging>jar</packaging>
   <name>Metadata Writer Framework</name>
-  <version>4.2.6</version>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>${alfresco.groupId}</groupId>
-        <artifactId>alfresco-platform-distribution</artifactId>
-        <version>${alfresco.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
+  <version>4.2.7</version>
 
   <dependencies>
-
     <dependency>
       <groupId>${alfresco.groupId}</groupId>
       <artifactId>alfresco-repository</artifactId>
@@ -66,14 +53,14 @@
     <dependency>
       <groupId>org.redpill-linpro.alfresco</groupId>
       <artifactId>alfresco-test-repo</artifactId>
-      <version>1.0.4</version>
+      <version>1.0.8</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
 
   <issueManagement>
-    <system>Google Code</system>
-    <url>http://code.google.com/p/alfresco-metadata-writer/issues/list</url>
+    <system>Github</system>
+    <url>https://github.com/Redpill-Linpro/alfresco-metadata-writer/issues</url>
   </issueManagement>
 
   <organization>
@@ -97,15 +84,6 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
         <version>2.2.1</version>
         <executions>
@@ -117,6 +95,7 @@
           </execution>
         </executions>
       </plugin>
+      
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
