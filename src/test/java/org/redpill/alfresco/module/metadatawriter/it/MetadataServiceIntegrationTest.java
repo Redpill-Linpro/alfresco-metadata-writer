@@ -4,35 +4,54 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
-
-import javax.annotation.Resource;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.alfresco.model.ContentModel;
+import org.alfresco.repo.content.MimetypeMap;
+import org.alfresco.repo.content.metadata.MetadataExtracter;
+import org.alfresco.repo.content.metadata.MetadataExtracterRegistry;
 import org.alfresco.repo.transaction.RetryingTransactionHelper.RetryingTransactionCallback;
-import org.alfresco.service.cmr.model.FileInfo;
+import org.alfresco.service.cmr.repository.ContentData;
 import org.alfresco.service.cmr.repository.ContentIOException;
 import org.alfresco.service.cmr.repository.ContentReader;
 import org.alfresco.service.cmr.repository.NodeRef;
+import org.alfresco.service.cmr.repository.datatype.DefaultTypeConverter;
 import org.alfresco.service.cmr.site.SiteInfo;
+import org.alfresco.service.namespace.QName;
+import org.apache.commons.lang.StringUtils;
 import org.apache.pdfbox.exceptions.COSVisitorException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.poi.hpsf.UnexpectedPropertySetTypeException;
 import org.junit.Test;
+import org.redpill.alfresco.module.metadatawriter.factories.MetadataContentFactory;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade.ContentException;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataService;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataService.UpdateMetadataException;
 import org.redpill.alfresco.test.AbstractRepoIntegrationTest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.ContextConfiguration;
 
 @ContextConfiguration({ "classpath:alfresco/application-context.xml", "classpath:test-application-context.xml" })
 public class MetadataServiceIntegrationTest extends AbstractRepoIntegrationTest {
 
+  private static final String TEST_TITLE = "This is a test öäåÖÄÅ";
+
   private static final String DEFAULT_USERNAME = "testuser";
 
-  private SiteInfo _site;
+  private static SiteInfo _site;
 
-  @Resource(name = "metadata-writer.test-service")
+  @Autowired
+  @Qualifier("metadata-writer.test-service")
   private MetadataService _metadataService;
+
+  @Autowired
+  private MetadataContentFactory _metadataContentFactory;
+
+  @Autowired
+  private MetadataExtracterRegistry _metadataExtracterRegistry;
 
   @Override
   public void beforeClassSetup() {
@@ -69,7 +88,7 @@ public class MetadataServiceIntegrationTest extends AbstractRepoIntegrationTest 
     pdfDocument.save("/tmp/test.pdf");
 
     try {
-      assertEquals("This is a test öäåÖÄÅ", pdfDocument.getDocumentInformation().getTitle());
+      assertEquals(TEST_TITLE, pdfDocument.getDocumentInformation().getTitle());
       assertEquals("test.pdf", pdfDocument.getDocumentInformation().getCustomMetadataValue("cm:name"));
     } finally {
       pdfDocument.close();
@@ -87,7 +106,7 @@ public class MetadataServiceIntegrationTest extends AbstractRepoIntegrationTest 
     pdfDocument.save("/tmp/test_pdfa.pdf");
 
     try {
-      assertEquals("This is a test öäåÖÄÅ", pdfDocument.getDocumentInformation().getTitle());
+      assertEquals(TEST_TITLE, pdfDocument.getDocumentInformation().getTitle());
       assertEquals("test_pdfa.pdf", pdfDocument.getDocumentInformation().getCustomMetadataValue("cm:name"));
     } finally {
       pdfDocument.close();
@@ -97,27 +116,6 @@ public class MetadataServiceIntegrationTest extends AbstractRepoIntegrationTest 
   @Test
   public void testWriteDoc() throws ContentIOException, IOException, ContentException, UnexpectedPropertySetTypeException {
     doTestWrite("test.doc");
-    
-    // NodeRef document = doTestWrite("test.doc");
-    //
-    // ContentReader reader = _contentService.getReader(document,
-    // ContentModel.PROP_CONTENT);
-    //
-    // POIFSFileSystem fileSystem = new
-    // POIFSFileSystem(reader.getContentInputStream());
-    //
-    // PropertySet propertySet =
-    // POIFSFacadeImpl.createPropertySet(SummaryInformation.DEFAULT_STREAM_NAME,
-    // fileSystem);
-    //
-    // SummaryInformation summaryInformation = new
-    // SummaryInformation(propertySet);
-    // DocumentSummaryInformation documentSummaryInformation =
-    // POIFSFacadeImpl.getDocumentSummaryInformation(fileSystem);
-    //
-    // assertEquals("This is a test öäåÖÄÅ", summaryInformation.getTitle());
-    // assertEquals("test.pdf",
-    // documentSummaryInformation.getCustomProperties().get("cm:name"));
   }
 
   @Test
@@ -135,10 +133,37 @@ public class MetadataServiceIntegrationTest extends AbstractRepoIntegrationTest 
     doTestWrite("test.xlsx");
   }
 
-  public NodeRef doTestWrite(String filename) {
-    FileInfo file = uploadDocument(_site, filename);
+  @Test
+  public void testWriteOdt() {
+    doTestWrite("test.odt", MimetypeMap.MIMETYPE_OPENDOCUMENT_TEXT);
+  }
 
-    final NodeRef document = file.getNodeRef();
+  @Test
+  public void testWriteOds() {
+    doTestWrite("test.ods", MimetypeMap.MIMETYPE_OPENDOCUMENT_SPREADSHEET);
+  }
+
+  @Test
+  public void testWriteOdp() {
+    doTestWrite("test.odp", MimetypeMap.MIMETYPE_OPENDOCUMENT_PRESENTATION);
+  }
+
+  public NodeRef doTestWrite(String filename) {
+    return doTestWrite(filename, null);
+  }
+
+  public NodeRef doTestWrite(String filename, String mimetype) {
+    setRequiresNew(true);
+
+    final NodeRef document = uploadDocument(_site, filename).getNodeRef();
+
+    if (StringUtils.isNotBlank(mimetype)) {
+      ContentData contentData = (ContentData) _nodeService.getProperty(document, ContentModel.PROP_CONTENT);
+
+      contentData = ContentData.setMimetype(contentData, mimetype);
+
+      _nodeService.setProperty(document, ContentModel.PROP_CONTENT, contentData);
+    }
 
     RetryingTransactionCallback<NodeRef> callback = new RetryingTransactionCallback<NodeRef>() {
 
@@ -155,15 +180,37 @@ public class MetadataServiceIntegrationTest extends AbstractRepoIntegrationTest 
       }
     };
 
-    return _transactionHelper.doInTransaction(callback, false, false);
+    NodeRef result = _transactionHelper.doInTransaction(callback, false, true);
+    
+    assertTitle(document);
+
+    return result;
   }
 
-  protected NodeRef testWriteInTransaction(NodeRef document) throws UpdateMetadataException {
-    _nodeService.setProperty(document, ContentModel.PROP_TITLE, "This is a test öäåÖÄÅ");
+  protected void testWriteInTransaction(NodeRef document) throws UpdateMetadataException {
+    _nodeService.setProperty(document, ContentModel.PROP_TITLE, TEST_TITLE);
 
     _metadataService.write(document);
+  }
 
-    return document;
+  private void assertTitle(NodeRef document) {
+    ContentData contentData = (ContentData) _nodeService.getProperty(document, ContentModel.PROP_CONTENT);
+
+    String mimetype = contentData.getMimetype();
+
+    MetadataExtracter extracter = _metadataExtracterRegistry.getExtracter(mimetype);
+
+    Map<QName, Serializable> properties = new HashMap<QName, Serializable>();
+
+    ContentReader contentReader = _contentService.getReader(document, ContentModel.PROP_CONTENT);
+
+    properties = extracter.extract(contentReader, properties);
+
+    String title = DefaultTypeConverter.INSTANCE.convert(String.class, properties.get(ContentModel.PROP_TITLE));
+
+    System.out.println("KALLE: " + title);
+
+    assertEquals(TEST_TITLE, title);
   }
 
 }

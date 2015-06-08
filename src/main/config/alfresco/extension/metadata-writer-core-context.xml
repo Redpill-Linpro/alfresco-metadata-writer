@@ -1,6 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 
-<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p" xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
 
   <bean id="metadata-writer.dictionaryBootstrap" parent="dictionaryModelBootstrap" depends-on="dictionaryBootstrap">
     <property name="models">
@@ -28,6 +29,8 @@
 
   <bean id="metadata-writer.PdfInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.PdfContentInstantiator" />
 
+  <bean id="metadata-writer.OdfInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.OpenDocumentFormatContentInstantiator" />
+
   <bean id="metadata-writer.contentFactory" class="org.redpill.alfresco.module.metadatawriter.factories.impl.MetadataContentFactoryImpl">
     <constructor-arg type="org.alfresco.service.cmr.repository.ContentService">
       <ref bean="ContentService" />
@@ -41,6 +44,7 @@
         <ref bean="metadata-writer.MSExcelInstantiatorX" />
         <ref bean="metadata-writer.MSPowerPointInstantiatorX" />
         <ref bean="metadata-writer.PdfInstantiator" />
+        <ref bean="metadata-writer.OdfInstantiator" />
       </set>
     </constructor-arg>
   </bean>
