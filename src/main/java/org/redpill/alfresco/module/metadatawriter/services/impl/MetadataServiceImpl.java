@@ -188,18 +188,18 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
   }
 
   @Override
-  public void write(final NodeRef contentRef) throws UpdateMetadataException {
-    write(contentRef, null);
+  public void write(NodeRef document) throws UpdateMetadataException {
+    write(document, null);
   }
 
   @Override
-  public void write(final NodeRef nodeRef, MetadataWriterCallback callback) throws UpdateMetadataException {
+  public void write(NodeRef document, MetadataWriterCallback callback) throws UpdateMetadataException {
 
     // set up the transaction listener
     _transactionListener = new MetadataWriterTransactionListener();
 
     AlfrescoTransactionSupport.bindListener(_transactionListener);
-    AlfrescoTransactionSupport.bindResource(KEY_UPDATER, new MetadataWriterUpdater(nodeRef, callback));
+    AlfrescoTransactionSupport.bindResource(KEY_UPDATER, new MetadataWriterUpdater(document, callback));
     AlfrescoTransactionSupport.bindResource(KEY_FAIL_SILENTLY_ON_TIMEOUT, _failSilentlyOnTimeout);
   }
 
@@ -373,7 +373,7 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
             ume);
       } else {
         LOG.warn("Failed to write metadata for node " + node.toString() + ", caused by " + ume.getMessage());
-        
+
         if (LOG.isDebugEnabled()) {
           LOG.debug("Failed to write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME) + " (" + node + ")", ume);
         }

@@ -5,7 +5,7 @@
   <parent>
     <groupId>com.redpill-linpro.alfresco</groupId>
     <artifactId>alfresco-base</artifactId>
-    <version>1.1.1.9</version>
+    <version>1.1.1.14</version>
   </parent>
 
   <properties>
@@ -13,13 +13,14 @@
     <alfresco.version>4.2.e</alfresco.version>
     <java.source.version>1.7</java.source.version>
     <java.target.version>1.7</java.target.version>
+    <poi.version>3.10.1</poi.version>
   </properties>
 
   <groupId>org.redpill-linpro.alfresco.module</groupId>
   <artifactId>metadatawriter</artifactId>
   <packaging>jar</packaging>
   <name>Metadata Writer Framework</name>
-  <version>4.2.7</version>
+  <version>4.2.8</version>
 
   <dependencies>
     <dependency>
@@ -30,11 +31,6 @@
     <dependency>
       <groupId>${alfresco.groupId}</groupId>
       <artifactId>alfresco-remote-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jmock</groupId>
-      <artifactId>jmock-junit4</artifactId>
     </dependency>
 
     <dependency>
@@ -53,8 +49,42 @@
     <dependency>
       <groupId>org.redpill-linpro.alfresco</groupId>
       <artifactId>alfresco-test-repo</artifactId>
-      <version>1.0.8</version>
+      <version>1.0.10</version>
       <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.odftoolkit</groupId>
+      <artifactId>simple-odf</artifactId>
+      <version>0.8.1-incubating</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi</artifactId>
+      <version>${poi.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-ooxml</artifactId>
+      <version>${poi.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-ooxml-schemas</artifactId>
+      <version>${poi.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-scratchpad</artifactId>
+      <version>${poi.version}</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 
@@ -81,6 +111,13 @@
       </resource>
     </resources>
 
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+        <filtering>false</filtering>
+      </testResource>
+    </testResources>
+
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -95,7 +132,7 @@
           </execution>
         </executions>
       </plugin>
-      
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
