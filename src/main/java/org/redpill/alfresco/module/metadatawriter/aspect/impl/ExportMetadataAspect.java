@@ -103,7 +103,10 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
       return;
     }
 
-    verifyMetadataExportableNode(nodeRef, MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+    if (!metadataExportableNode(nodeRef, MetadataWriterModel.ASPECT_METADATA_WRITEABLE)) {
+      LOG.warn("Node is not eligable for metadata export");
+      return;
+    }
 
     // Only update properties if before and after differ
     if (propertiesUpdatedRequireExport(before, after)) {
@@ -161,7 +164,10 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
       return;
     }
 
-    verifyMetadataExportableNode(versionableNode, MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+    if (!metadataExportableNode(versionableNode, MetadataWriterModel.ASPECT_METADATA_WRITEABLE)) {
+      LOG.warn("Node is not eligable for metadata export");
+      return;
+    }
 
     prepareWrite(versionableNode);
   }
@@ -210,7 +216,10 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
       return;
     }
 
-    verifyMetadataExportableNode(nodeRef, MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+    if (!metadataExportableNode(nodeRef, MetadataWriterModel.ASPECT_METADATA_WRITEABLE)) {
+      LOG.warn("Node is not eligable for metadata export");
+      return;
+    }
 
     prepareWrite(nodeRef);
   }
@@ -249,9 +258,13 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
   // ---------------------------------------------------
   // Private methods
   // ---------------------------------------------------
-  private void verifyMetadataExportableNode(final NodeRef node, final QName aspectQName) {
-    assert null != node : "Provided node is null!";
-    assert _nodeService.hasAspect(node, aspectQName) : "Node " + node + " does not have mandatory aspect " + aspectQName;
+  private boolean metadataExportableNode(final NodeRef node, final QName aspectQName) {
+    if (node==null || !_nodeService.exists(node)) {
+      return false;
+    } else if (!_nodeService.hasAspect(node, aspectQName)) {
+      return false;
+    }
+    return true;
   }
 
   private void prepareWrite(final NodeRef node) {
