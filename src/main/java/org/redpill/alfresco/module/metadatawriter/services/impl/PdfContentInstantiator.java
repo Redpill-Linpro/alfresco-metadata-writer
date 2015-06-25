@@ -10,7 +10,9 @@ import org.alfresco.service.cmr.repository.ContentWriter;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataContentInstantiator;
 import org.redpill.alfresco.module.metadatawriter.services.pdfbox.impl.PdfboxFacade;
+import org.springframework.stereotype.Component;
 
+@Component("metadata-writer.PdfInstantiator")
 public class PdfContentInstantiator implements MetadataContentInstantiator {
 
   @Override

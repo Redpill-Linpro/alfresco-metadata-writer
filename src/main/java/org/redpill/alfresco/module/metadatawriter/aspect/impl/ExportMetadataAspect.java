@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.annotation.PostConstruct;
+
 import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.node.NodeServicePolicies.OnAddAspectPolicy;
@@ -19,7 +21,6 @@ import org.alfresco.service.cmr.lock.LockType;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.cmr.version.Version;
-import org.alfresco.service.namespace.NamespaceService;
 import org.alfresco.service.namespace.QName;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -27,57 +28,54 @@ import org.redpill.alfresco.module.metadatawriter.factories.MetadataServiceRegis
 import org.redpill.alfresco.module.metadatawriter.factories.UnknownServiceNameException;
 import org.redpill.alfresco.module.metadatawriter.model.MetadataWriterModel;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataService;
-import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
-public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdatePropertiesPolicy, OnAddAspectPolicy, InitializingBean {
+@Component("metadata-writer.writeMetadataAspect")
+@DependsOn("metadata-content.dictionaryBootstrap")
+public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdatePropertiesPolicy, OnAddAspectPolicy {
 
   private static final Log LOG = LogFactory.getLog(ExportMetadataAspect.class);
 
+  @Autowired
+  @Qualifier("policyComponent")
   private PolicyComponent _policyComponent;
 
+  @Autowired
+  @Qualifier("NodeService")
   private NodeService _nodeService;
 
+  @Autowired
+  @Qualifier("metadata-writer.serviceRegistry")
   private MetadataServiceRegistry _metadataServiceRegistry;
 
+  @Autowired
+  @Qualifier("LockService")
   private LockService _lockService;
 
-  private boolean runAsSystem;
+  @Value("${metadata-writer.runAsSystem}")
+  private boolean _runAsSystem = false;
 
-  public void setPolicyComponent(PolicyComponent policyComponent) {
-    _policyComponent = policyComponent;
-  }
+  private JavaBehaviour _onUpdateProperties;
 
-  public void setNodeService(NodeService nodeService) {
-    _nodeService = nodeService;
-  }
+  private JavaBehaviour _onAddAspect;
 
-  public void setMetadataServiceRegistry(MetadataServiceRegistry metadataServiceRegistry) {
-    _metadataServiceRegistry = metadataServiceRegistry;
-  }
-
-  public void setLockService(LockService lockService) {
-    _lockService = lockService;
-  }
-
-  public boolean getRunAs() {
-    return runAsSystem;
-  }
-
-  /*
-   * public void setRunAsSystem(boolean runAsSystem) { this.runAsSystem =
-   * runAsSystem; }
-   */
+  private JavaBehaviour _afterCreateVersion;
 
   public void setRunAsSystem(String runAsSystem) {
     if (runAsSystem != null && runAsSystem.equalsIgnoreCase("true")) {
-      this.runAsSystem = true;
+      _runAsSystem = true;
     } else {
-      this.runAsSystem = false;
+      _runAsSystem = false;
     }
+
     if (LOG.isInfoEnabled()) {
-      LOG.info("Run metadatawriter as System user: " + this.runAsSystem);
+      LOG.info("Run metadatawriter as System user: " + this._runAsSystem);
     }
   }
 
@@ -129,13 +127,15 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
       LOG.trace("After: " + after.toString());
     }
 
-    if (runAsSystem) {
+    if (_runAsSystem) {
       AuthenticationUtil.runAsSystem(new RunAsWork<Void>() {
+
         @Override
         public Void doWork() throws Exception {
           _onUpdateProperties(nodeRef, before, after);
           return null;
         }
+
       });
     } else {
       _onUpdateProperties(nodeRef, before, after);
@@ -180,13 +180,15 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
     if (LOG.isDebugEnabled()) {
       LOG.debug("afterCreateVersion " + version.getVersionLabel() + " for node " + versionableNode);
     }
-    if (runAsSystem) {
+    if (_runAsSystem) {
       AuthenticationUtil.runAsSystem(new RunAsWork<Void>() {
+
         @Override
         public Void doWork() throws Exception {
           _afterCreateVersion(versionableNode, version);
           return null;
         }
+
       });
     } else {
       _afterCreateVersion(versionableNode, version);
@@ -230,29 +232,30 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
       LOG.debug("onAddAspect " + aspectTypeQName.toPrefixString() + " for node " + nodeRef);
     }
 
-    if (runAsSystem) {
+    if (_runAsSystem) {
       AuthenticationUtil.runAsSystem(new RunAsWork<Void>() {
+
         @Override
         public Void doWork() throws Exception {
           _onAddAspect(nodeRef, aspectTypeQName);
           return null;
         }
+
       });
     } else {
       _onAddAspect(nodeRef, aspectTypeQName);
     }
   }
 
-  @Override
-  public void afterPropertiesSet() throws Exception {
-    _policyComponent.bindClassBehaviour(OnUpdatePropertiesPolicy.QNAME, MetadataWriterModel.ASPECT_METADATA_WRITEABLE, new JavaBehaviour(this, "onUpdateProperties",
-        Behaviour.NotificationFrequency.TRANSACTION_COMMIT));
+  @PostConstruct
+  public void postConstruct() {
+    _onUpdateProperties = new JavaBehaviour(this, "onUpdateProperties", Behaviour.NotificationFrequency.TRANSACTION_COMMIT);
+    _onAddAspect = new JavaBehaviour(this, "onAddAspect", Behaviour.NotificationFrequency.TRANSACTION_COMMIT);
+    _afterCreateVersion = new JavaBehaviour(this, "afterCreateVersion", Behaviour.NotificationFrequency.TRANSACTION_COMMIT);
 
-    _policyComponent.bindClassBehaviour(OnAddAspectPolicy.QNAME, MetadataWriterModel.ASPECT_METADATA_WRITEABLE, new JavaBehaviour(this, "onAddAspect",
-        Behaviour.NotificationFrequency.TRANSACTION_COMMIT));
-
-    _policyComponent.bindClassBehaviour(QName.createQName(NamespaceService.ALFRESCO_URI, "afterCreateVersion"), MetadataWriterModel.ASPECT_METADATA_WRITEABLE, new JavaBehaviour(this,
-        "afterCreateVersion", Behaviour.NotificationFrequency.TRANSACTION_COMMIT));
+    _policyComponent.bindClassBehaviour(OnUpdatePropertiesPolicy.QNAME, MetadataWriterModel.ASPECT_METADATA_WRITEABLE, _onUpdateProperties);
+    _policyComponent.bindClassBehaviour(OnAddAspectPolicy.QNAME, MetadataWriterModel.ASPECT_METADATA_WRITEABLE, _onAddAspect);
+    _policyComponent.bindClassBehaviour(AfterCreateVersionPolicy.QNAME, MetadataWriterModel.ASPECT_METADATA_WRITEABLE, _afterCreateVersion);
   }
 
   // ---------------------------------------------------
@@ -268,17 +271,18 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
   }
 
   private void prepareWrite(final NodeRef node) {
-
-    final String serviceName = (String) _nodeService.getProperty(node, MetadataWriterModel.PROP_METADATA_SERVICE_NAME);
+    String serviceName = (String) _nodeService.getProperty(node, MetadataWriterModel.PROP_METADATA_SERVICE_NAME);
 
     if (!StringUtils.hasText(serviceName)) {
       if (LOG.isInfoEnabled()) {
         LOG.info("No Metadata service specified for node " + node);
       }
+
       return;
     }
 
-    final MetadataService metadataService;
+    MetadataService metadataService;
+
     try {
       metadataService = _metadataServiceRegistry.findService(serviceName);
 
@@ -304,8 +308,8 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
   // unnecessary updates
   private boolean propertiesUpdatedRequireExport(final Map<QName, Serializable> before, final Map<QName, Serializable> after) {
     // Blacklist
-    final Map<QName, Serializable> beforeFiltered = new HashMap<QName, Serializable>();
-    final Map<QName, Serializable> afterFiltered = new HashMap<QName, Serializable>();
+    Map<QName, Serializable> beforeFiltered = new HashMap<QName, Serializable>();
+    Map<QName, Serializable> afterFiltered = new HashMap<QName, Serializable>();
     // TODO add option to add blacklisted properties by config
     beforeFiltered.putAll(before);
     afterFiltered.putAll(after);
@@ -319,12 +323,34 @@ public class ExportMetadataAspect implements AfterCreateVersionPolicy, OnUpdateP
       if (LOG.isDebugEnabled()) {
         LOG.debug("Blacklisting property " + ContentModel.PROP_LAST_THUMBNAIL_MODIFICATION_DATA + " from property updated comparison");
       }
-      
+
       beforeFiltered.remove(ContentModel.PROP_LAST_THUMBNAIL_MODIFICATION_DATA);
       afterFiltered.remove(ContentModel.PROP_LAST_THUMBNAIL_MODIFICATION_DATA);
     }
 
     return !beforeFiltered.equals(afterFiltered);
+  }
+
+  // setters and getters only here for unit testing
+
+  public void setMetadataServiceRegistry(MetadataServiceRegistry metadataServiceRegistry) {
+    _metadataServiceRegistry = metadataServiceRegistry;
+  }
+
+  public void setNodeService(NodeService nodeService) {
+    _nodeService = nodeService;
+  }
+
+  public void setPolicyComponent(PolicyComponent policyComponent) {
+    _policyComponent = policyComponent;
+  }
+
+  public void setLockService(LockService lockService) {
+    _lockService = lockService;
+  }
+
+  public boolean isRunAsSystem() {
+    return _runAsSystem;
   }
 
 }

@@ -14,6 +14,9 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.policy.BehaviourFilter;
@@ -44,25 +47,58 @@ import org.redpill.alfresco.module.metadatawriter.services.MetadataService;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataWriterCallback;
 import org.redpill.alfresco.module.metadatawriter.services.NodeMetadataProcessor;
 import org.redpill.alfresco.module.metadatawriter.services.NodeVerifierProcessor;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
-public class MetadataServiceImpl implements MetadataService, InitializingBean, DisposableBean {
+@Component("metadata-writer.abstract.service")
+public class MetadataServiceImpl implements MetadataService {
 
   private static final Logger LOG = Logger.getLogger(MetadataServiceImpl.class);
 
   private Map<QName, String> _metadataMapping;
+
+  @Autowired
+  @Qualifier("metadata-writer.serviceRegistry")
   private MetadataServiceRegistry _metadataServiceRegistry;
+
+  @Autowired
+  @Qualifier("metadata-writer.contentFactory")
   private MetadataContentFactory _metadataContentFactory;
+
+  @Autowired
+  @Qualifier("NamespaceService")
   private NamespaceService _namespaceService;
-  private String _serviceName;
+
+  protected String _serviceName;
+
   private List<ValueConverter> _converters;
+
+  @Autowired
+  @Qualifier("TransactionService")
   private TransactionService _transactionService;
+
+  @Autowired
+  @Qualifier("policyBehaviourFilter")
   private BehaviourFilter _behaviourFilter;
+
   private TransactionListener _transactionListener;
+
+  @Autowired
+  @Qualifier("NodeService")
   private NodeService _nodeService;
+
+  @Autowired
+  @Qualifier("metadata-writer.metadataProcessor")
   private NodeMetadataProcessor _nodeMetadataProcessor;
+
+  @Autowired
+  @Qualifier("metadata-writer.verifierProcessor")
   private NodeVerifierProcessor _nodeVerifierProcessor;
+
+  @Autowired
+  @Qualifier("ActionService")
   private ActionService _actionService;
 
   /**
@@ -72,59 +108,18 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
    * metadata write. If renditions are not deleted they may not reflect the
    * actual node content
    */
-  private boolean _deleteRenditions = false;
+  @Value("${metadata-writer.deleteRenditions}")
+  private boolean _deleteRenditions = true;
 
   private static final Object KEY_UPDATER = MetadataService.class.getName() + ".updater";
   private static final Object KEY_FAIL_SILENTLY_ON_TIMEOUT = MetadataService.class.getName() + ".failSilently";
   private ExecutorService _executorService;
+
+  @Value("${metadata-writer.default.timeout}")
   private int _timeout = MetadataService.DEFAULT_TIMEOUT;
 
+  @Value("${metadata-writer.default.failSilentlyOnTimeout}")
   private boolean _failSilentlyOnTimeout = false;
-
-  public MetadataServiceImpl() {
-  }
-
-  // ---------------------------------------------------
-  // Public constructor
-  // ---------------------------------------------------
-  public MetadataServiceImpl(final MetadataServiceRegistry metadataServiceRegistry, final MetadataContentFactory metadataContentFactory, final NamespaceService namespaceService,
-      TransactionService transactionService, BehaviourFilter behaviourFilter, final NodeService nodeService, final ActionService actionService) {
-    _metadataServiceRegistry = metadataServiceRegistry;
-    _metadataContentFactory = metadataContentFactory;
-    _namespaceService = namespaceService;
-    _transactionService = transactionService;
-    _behaviourFilter = behaviourFilter;
-    _nodeService = nodeService;
-    _actionService = actionService;
-  }
-
-  // ---------------------------------------------------
-  // Public constructor
-  // ---------------------------------------------------
-  public MetadataServiceImpl(final MetadataServiceRegistry registry, final MetadataContentFactory metadataContentFactory, final NamespaceService namespaceService,
-      TransactionService transactionService, BehaviourFilter behaviourFilter, final Properties mappings, final String serviceName, final List<ValueConverter> converters, final NodeService nodeService) {
-    _metadataServiceRegistry = registry;
-    _metadataContentFactory = metadataContentFactory;
-    _namespaceService = namespaceService;
-    _transactionService = transactionService;
-    _behaviourFilter = behaviourFilter;
-    _serviceName = serviceName;
-    _converters = converters;
-    _metadataMapping = convertMappings(mappings);
-    _nodeService = nodeService;
-  }
-
-  public void setNodeMetadataProcessor(NodeMetadataProcessor nodeMetadataProcessor) {
-    _nodeMetadataProcessor = nodeMetadataProcessor;
-  }
-
-  public void setNodeVerifierProcessor(NodeVerifierProcessor nodeVerifierProcessor) {
-    _nodeVerifierProcessor = nodeVerifierProcessor;
-  }
-
-  public void setServiceName(String serviceName) {
-    _serviceName = serviceName;
-  }
 
   public void setConverters(List<ValueConverter> converters) {
     _converters = converters;
@@ -132,14 +127,6 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
 
   public void setMappings(Properties mappings) {
     _metadataMapping = convertMappings(mappings);
-  }
-
-  public void setTimeout(int timeout) {
-    _timeout = timeout;
-  }
-
-  public void setDeleteRenditions(boolean deleteRenditions) {
-    _deleteRenditions = deleteRenditions;
   }
 
   public void setFailSilentlyOnTimeout(String failSilentlyOnTimeout) {
@@ -183,11 +170,6 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
   // ---------------------------------------------------
 
   @Override
-  public String getServiceName() {
-    return _serviceName;
-  }
-
-  @Override
   public void write(NodeRef document) throws UpdateMetadataException {
     write(document, null);
   }
@@ -201,10 +183,6 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
     AlfrescoTransactionSupport.bindListener(_transactionListener);
     AlfrescoTransactionSupport.bindResource(KEY_UPDATER, new MetadataWriterUpdater(document, callback));
     AlfrescoTransactionSupport.bindResource(KEY_FAIL_SILENTLY_ON_TIMEOUT, _failSilentlyOnTimeout);
-  }
-
-  public void register() {
-    _metadataServiceRegistry.register(this);
   }
 
   // ---------------------------------------------------
@@ -227,9 +205,6 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
          * though it was disabled. Otherwise a new version is created when the
          * updated content is written (and cm:autoVersion == true)
          */
-
-        // TODO: Remove!
-        _behaviourFilter.disableBehaviour();
 
         assert contentRef != null;
         assert properties != null;
@@ -264,10 +239,18 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
           }
         }
 
+        _behaviourFilter.disableBehaviour(ContentModel.ASPECT_VERSIONABLE);
+        _behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
+        _behaviourFilter.disableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+
         try {
           content.save();
         } catch (final ContentException e) {
           throw new UpdateMetadataException("Could not save after update!", e);
+        } finally {
+          _behaviourFilter.enableBehaviour(ContentModel.ASPECT_VERSIONABLE);
+          _behaviourFilter.enableBehaviour(ContentModel.ASPECT_AUDITABLE);
+          _behaviourFilter.enableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
         }
 
         return null;
@@ -360,9 +343,17 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
     }
 
     try {
-      _behaviourFilter.disableBehaviour();
+      _behaviourFilter.disableBehaviour(ContentModel.ASPECT_VERSIONABLE);
+      _behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
+      _behaviourFilter.disableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
 
-      writeNode(node);
+      try {
+        writeNode(node);
+      } finally {
+        _behaviourFilter.enableBehaviour(ContentModel.ASPECT_VERSIONABLE);
+        _behaviourFilter.enableBehaviour(ContentModel.ASPECT_AUDITABLE);
+        _behaviourFilter.enableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+      }
 
       if (LOG.isDebugEnabled()) {
         LOG.debug("Successfully wrote metadata properties on node: " + node);
@@ -508,14 +499,25 @@ public class MetadataServiceImpl implements MetadataService, InitializingBean, D
     }
   }
 
-  @Override
-  public void afterPropertiesSet() throws Exception {
+  @PostConstruct
+  public void postConstruct() {
     _executorService = Executors.newCachedThreadPool();
+
+    _metadataServiceRegistry.register(this);
+  }
+
+  @PreDestroy
+  public void preDestroy() {
+    _executorService.shutdown();
   }
 
   @Override
-  public void destroy() throws Exception {
-    _executorService.shutdown();
+  public String getServiceName() {
+    return _serviceName;
+  }
+
+  public void setServiceName(String serviceName) {
+    _serviceName = serviceName;
   }
 
 }

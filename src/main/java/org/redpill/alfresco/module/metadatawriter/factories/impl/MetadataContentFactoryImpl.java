@@ -16,21 +16,17 @@ import org.redpill.alfresco.module.metadatawriter.factories.MetadataContentFacto
 import org.redpill.alfresco.module.metadatawriter.factories.UnsupportedMimetypeException;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataContentInstantiator;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.util.StringUtils;
 
 public class MetadataContentFactoryImpl implements MetadataContentFactory {
 
+  @Autowired
+  @Qualifier("ContentService")
   private ContentService _contentService;
+  
   private Set<MetadataContentInstantiator> _instantiators;
-
-  // ---------------------------------------------------
-  // Public constructor
-  // ---------------------------------------------------
-  public MetadataContentFactoryImpl(ContentService contentService, Set<MetadataContentInstantiator> metadataContentInstantiators) {
-    assert null != contentService;
-    _contentService = contentService;
-    _instantiators = metadataContentInstantiators;
-  }
 
   // ---------------------------------------------------
   // Public methods
@@ -121,5 +117,13 @@ public class MetadataContentFactoryImpl implements MetadataContentFactory {
 
     return writer;
   }
-
+  
+  public void setInstantiators(Set<MetadataContentInstantiator> instantiators) {
+    _instantiators = instantiators;
+  }
+  
+  public void setContentService(ContentService contentService) {
+    _contentService = contentService;
+  }
+  
 }

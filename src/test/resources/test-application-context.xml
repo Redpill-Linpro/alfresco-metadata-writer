@@ -3,8 +3,8 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-  <bean id="metadata-writer.test-service" class="org.redpill.alfresco.module.metadatawriter.services.impl.MetadataServiceImpl" init-method="register" parent="metadata-writer.abstract.service">
-    <property name="serviceName" value="vgr.metadata-writer.service" />
+  <bean id="metadata-writer.test-service" class="org.redpill.alfresco.module.metadatawriter.services.impl.MetadataServiceImpl" parent="metadata-writer.abstract.service">
+    <property name="serviceName" value="foobar.metadata-writer.service" />
     <property name="converters">
       <list>
         <ref bean="metadata-writer.test-dateConverter" />

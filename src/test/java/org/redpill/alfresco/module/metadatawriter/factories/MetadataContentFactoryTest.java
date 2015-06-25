@@ -1,11 +1,11 @@
 package org.redpill.alfresco.module.metadatawriter.factories;
 
 
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-
-import junit.framework.Assert;
 
 import org.alfresco.repo.content.MimetypeMap;
 import org.alfresco.service.cmr.repository.ContentReader;
@@ -18,15 +18,13 @@ import org.jmock.Mockery;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.redpill.alfresco.module.metadatawriter.factories.MetadataContentFactory;
-import org.redpill.alfresco.module.metadatawriter.factories.UnsupportedMimetypeException;
 import org.redpill.alfresco.module.metadatawriter.factories.impl.MetadataContentFactoryImpl;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataContentInstantiator;
 
 
 public class MetadataContentFactoryTest {
 
-	private MetadataContentFactory factory;
+	private MetadataContentFactoryImpl factory;
 	
 	private final Mockery mockery = new Mockery();
 	private ContentService contentService;
@@ -38,9 +36,11 @@ public class MetadataContentFactoryTest {
 	//---------------------------------------------------
 	@Before
 	public void setUp() throws Exception {
+	  factory = new MetadataContentFactoryImpl();
 		instantiators.clear();
 		contentService = mockery.mock(ContentService.class);
-		factory = new MetadataContentFactoryImpl(contentService, instantiators);
+		factory.setContentService(contentService);
+		factory.setInstantiators(instantiators);
 	}
 
 	@After
@@ -86,8 +86,7 @@ public class MetadataContentFactoryTest {
 			return;
 		}
 		
-		Assert.fail("Expected exception due to no instantiator supporting " + MimetypeMap.MIMETYPE_ATOM);
-		
+		fail("Expected exception due to no instantiator supporting " + MimetypeMap.MIMETYPE_ATOM);
 	}
 	
 

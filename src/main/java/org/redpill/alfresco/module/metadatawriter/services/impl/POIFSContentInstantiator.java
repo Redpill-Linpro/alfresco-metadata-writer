@@ -10,51 +10,24 @@ import org.alfresco.service.cmr.repository.ContentWriter;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataContentInstantiator;
 import org.redpill.alfresco.module.metadatawriter.services.poifs.impl.POIFSContentFacade;
+import org.springframework.stereotype.Component;
 
-public class POIFSContentInstantiator {
+@Component("metadata-writer.PoiFsInstantiator")
+public class PoiFsContentInstantiator implements MetadataContentInstantiator {
 
-  public static abstract class AbstractPOIFSContentInstantiator implements MetadataContentInstantiator {
-
-    @Override
-    public ContentFacade create(InputStream inputStream, OutputStream outputStream) throws IOException {
-      return new POIFSContentFacade(inputStream, outputStream);
-    }
-
-    @Override
-    public ContentFacade create(ContentReader reader, ContentWriter writer) throws IOException {
-      return create(reader.getContentInputStream(), writer.getContentOutputStream());
-    }
-
+  @Override
+  public ContentFacade create(ContentReader reader, ContentWriter writer) throws IOException {
+    return create(reader.getContentInputStream(), writer.getContentOutputStream());
   }
 
-  // ---------------------------------------------------
-  // Public classes
-  // ---------------------------------------------------
-  public static class MSWordContentInstantiator extends AbstractPOIFSContentInstantiator {
-
-    @Override
-    public boolean supports(String mimetype) {
-      return MimetypeMap.MIMETYPE_WORD.equalsIgnoreCase(mimetype);
-    }
-
+  @Override
+  public ContentFacade create(InputStream inputStream, OutputStream outputStream) throws IOException {
+    return new POIFSContentFacade(inputStream, outputStream);
   }
 
-  public static class MSExcelContentInstantiator extends AbstractPOIFSContentInstantiator {
-
-    @Override
-    public boolean supports(String mimetype) {
-      return MimetypeMap.MIMETYPE_EXCEL.equalsIgnoreCase(mimetype);
-    }
-
-  }
-
-  public static class MSPowerPointContentInstantiator extends AbstractPOIFSContentInstantiator {
-
-    @Override
-    public boolean supports(String mimetype) {
-      return MimetypeMap.MIMETYPE_PPT.equalsIgnoreCase(mimetype);
-    }
-
+  @Override
+  public boolean supports(String mimetype) {
+    return MimetypeMap.MIMETYPE_WORD.equalsIgnoreCase(mimetype) || MimetypeMap.MIMETYPE_EXCEL.equalsIgnoreCase(mimetype) || MimetypeMap.MIMETYPE_PPT.equalsIgnoreCase(mimetype);
   }
 
 }
