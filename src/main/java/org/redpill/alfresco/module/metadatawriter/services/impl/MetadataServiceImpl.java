@@ -199,12 +199,6 @@ public class MetadataServiceImpl implements MetadataService {
           LOG.warn("Node " + contentRef + " does not exist. Aborting writeNode...");
           return null;
         }
-        /*
-         * Change 130214 Carl Nordenfelt: Needed to disable all behaviours since
-         * versioning was triggered for the VERSIONABLE_ASPECT behaviour even
-         * though it was disabled. Otherwise a new version is created when the
-         * updated content is written (and cm:autoVersion == true)
-         */
 
         assert contentRef != null;
         assert properties != null;
@@ -239,18 +233,21 @@ public class MetadataServiceImpl implements MetadataService {
           }
         }
 
-        _behaviourFilter.disableBehaviour(ContentModel.ASPECT_VERSIONABLE);
-        _behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
-        _behaviourFilter.disableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+        // there's STILL some problems with this, have to disable all...
+        // _behaviourFilter.disableBehaviour(ContentModel.ASPECT_VERSIONABLE);
+        // _behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
+        // _behaviourFilter.disableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+        _behaviourFilter.disableBehaviour();
 
         try {
           content.save();
         } catch (final ContentException e) {
           throw new UpdateMetadataException("Could not save after update!", e);
         } finally {
-          _behaviourFilter.enableBehaviour(ContentModel.ASPECT_VERSIONABLE);
-          _behaviourFilter.enableBehaviour(ContentModel.ASPECT_AUDITABLE);
-          _behaviourFilter.enableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+          // _behaviourFilter.enableBehaviour(ContentModel.ASPECT_VERSIONABLE);
+          // _behaviourFilter.enableBehaviour(ContentModel.ASPECT_AUDITABLE);
+          // _behaviourFilter.enableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+          _behaviourFilter.enableBehaviour();
         }
 
         return null;
@@ -343,16 +340,19 @@ public class MetadataServiceImpl implements MetadataService {
     }
 
     try {
-      _behaviourFilter.disableBehaviour(ContentModel.ASPECT_VERSIONABLE);
-      _behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
-      _behaviourFilter.disableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+      // there's STILL some problems with this, have to disable all...
+      // _behaviourFilter.disableBehaviour(ContentModel.ASPECT_VERSIONABLE);
+      // _behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
+      // _behaviourFilter.disableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+      _behaviourFilter.disableBehaviour();
 
       try {
         writeNode(node);
       } finally {
-        _behaviourFilter.enableBehaviour(ContentModel.ASPECT_VERSIONABLE);
-        _behaviourFilter.enableBehaviour(ContentModel.ASPECT_AUDITABLE);
-        _behaviourFilter.enableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+        // _behaviourFilter.enableBehaviour(ContentModel.ASPECT_VERSIONABLE);
+        // _behaviourFilter.enableBehaviour(ContentModel.ASPECT_AUDITABLE);
+        // _behaviourFilter.enableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+        _behaviourFilter.enableBehaviour();
       }
 
       if (LOG.isDebugEnabled()) {
