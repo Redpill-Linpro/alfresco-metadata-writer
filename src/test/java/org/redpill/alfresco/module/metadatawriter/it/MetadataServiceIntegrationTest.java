@@ -103,7 +103,7 @@ public class MetadataServiceIntegrationTest extends AbstractMetadataWriterIntegr
 
   @Test
   public void testWritePdf1() throws ContentIOException, COSVisitorException, IOException, CryptographyException, InvalidPasswordException {
-    doTestWritePdf("test.pdf", true, 7998);
+    doTestWritePdf("test.pdf", true, 7996);
   }
 
   @Test
@@ -113,7 +113,7 @@ public class MetadataServiceIntegrationTest extends AbstractMetadataWriterIntegr
 
   @Test
   public void testWritePdf3() throws ContentIOException, COSVisitorException, IOException, CryptographyException, InvalidPasswordException {
-    doTestWritePdf("test_pdfa.pdf", true, 22645);
+    doTestWritePdf("test_pdfa.pdf", true, 22644);
   }
 
   public void doTestWritePdf(String filename, boolean validate, int expectedSize) throws ContentIOException, IOException, COSVisitorException, CryptographyException, InvalidPasswordException {
