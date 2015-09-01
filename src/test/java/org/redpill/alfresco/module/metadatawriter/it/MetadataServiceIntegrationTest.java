@@ -1,7 +1,6 @@
 package org.redpill.alfresco.module.metadatawriter.it;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -120,11 +119,11 @@ public class MetadataServiceIntegrationTest extends AbstractMetadataWriterIntegr
     NodeRef document = doTestWrite(filename, null, validate);
 
     ContentReader reader = _contentService.getReader(document, ContentModel.PROP_CONTENT);
-    
+
     assertEquals(expectedSize, reader.getSize());
 
     PDDocument pdfDocument = PDDocument.load(reader.getContentInputStream());
-    
+
     if (pdfDocument.isEncrypted()) {
       return;
     }
@@ -167,12 +166,7 @@ public class MetadataServiceIntegrationTest extends AbstractMetadataWriterIntegr
 
       @Override
       public NodeRef execute() throws Throwable {
-        try {
-          testWriteInTransaction(document);
-        } catch (Exception ex) {
-          fail();
-          throw ex;
-        }
+        testWriteInTransaction(document);
 
         return document;
       }
