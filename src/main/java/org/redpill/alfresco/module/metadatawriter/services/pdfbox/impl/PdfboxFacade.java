@@ -105,6 +105,8 @@ public class PdfboxFacade implements ContentFacade {
           stamper.setFullCompression();
         }
       } else {
+        copyOriginal = true;
+        
         LOG.warn("Did not write metadata to PDF document since it is encrypted.");
       }
 

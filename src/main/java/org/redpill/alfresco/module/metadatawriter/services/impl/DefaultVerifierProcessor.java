@@ -1,5 +1,7 @@
 package org.redpill.alfresco.module.metadatawriter.services.impl;
 
+import javax.annotation.PostConstruct;
+
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.content.MimetypeMap;
 import org.alfresco.service.cmr.dictionary.DictionaryService;
@@ -12,42 +14,43 @@ import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.apache.log4j.Logger;
 import org.redpill.alfresco.module.metadatawriter.services.NodeVerifierProcessor;
-import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-public class DefaultVerifierProcessor implements NodeVerifierProcessor, InitializingBean {
+@Component("metadata-writer.verifierProcessor")
+public class DefaultVerifierProcessor implements NodeVerifierProcessor {
 
   private static final Logger LOG = Logger.getLogger(DefaultVerifierProcessor.class);
 
+  @Autowired
+  @Qualifier("NodeService")
   protected NodeService _nodeService;
+  
+  @Autowired
+  @Qualifier("LockService")
   protected LockService _lockService;
+
+  @Autowired
+  @Qualifier("DictionaryService")
   protected DictionaryService _dictionaryService;
+  
+  @Autowired
+  @Qualifier("ContentService")
   protected ContentService _contentService;
+
+  @Value("${metadata-writer.maxFileSize.docx}")
   protected long docxMaxSize = 0L;
+  
+  @Value("${metadata-writer.maxFileSize.xlsx}")
   protected long xlsxMaxSize = 0L;
+  
+  @Value("${metadata-writer.maxFileSize.pptx}")
   protected long pptxMaxSize = 0L;
 
-  public DefaultVerifierProcessor(NodeService nodeService, LockService lockService, DictionaryService dictionaryService, ContentService contentService) {
-    _nodeService = nodeService;
-    _lockService = lockService;
-    _dictionaryService = dictionaryService;
-    _contentService = contentService;
-  }
-
-  public void setDocxMaxSize(long docxMaxSize) {
-    this.docxMaxSize = docxMaxSize;
-  }
-
-  public void setXlsxMaxSize(long xlsxMaxSize) {
-    this.xlsxMaxSize = xlsxMaxSize;
-  }
-
-  public void setPptxMaxSize(long pptxMaxSize) {
-    this.pptxMaxSize = pptxMaxSize;
-  }
-
   public boolean verifyDocument(final NodeRef node) {
-
     if (LOG.isDebugEnabled()) {
       LOG.debug("Starting to execute DefaultVerifierProcessor#verifyDocument");
     }
@@ -78,38 +81,47 @@ public class DefaultVerifierProcessor implements NodeVerifierProcessor, Initiali
     // Check for OOXML formats size limit
 
     ContentReader reader = _contentService.getReader(node, ContentModel.PROP_CONTENT);
+    
     if (reader == null) {
       if (LOG.isDebugEnabled()) {
         LOG.debug("Node " + node + " has no conent");
       }
       return false;
     }
+    
     String mimetype = reader.getMimetype();
+    
     long size = reader.getSize();
+    
     if (MimetypeMap.MIMETYPE_OPENXML_WORDPROCESSING.equalsIgnoreCase(mimetype) && size > docxMaxSize) {
       if (LOG.isDebugEnabled()) {
         LOG.debug("Node " + node + " ignored (file size too big)");
       }
+      
       return false;
     }
+    
     if (MimetypeMap.MIMETYPE_OPENXML_SPREADSHEET.equalsIgnoreCase(mimetype) && size > xlsxMaxSize) {
       if (LOG.isDebugEnabled()) {
         LOG.debug("Node " + node + " ignored (file size too big)");
       }
+      
       return false;
     }
+    
     if (MimetypeMap.MIMETYPE_OPENXML_PRESENTATION.equalsIgnoreCase(mimetype) && size > pptxMaxSize) {
       if (LOG.isDebugEnabled()) {
         LOG.debug("Node " + node + " ignored (file size too big)");
       }
+      
       return false;
     }
 
     return verified;
   }
 
-  @Override
-  public void afterPropertiesSet() throws Exception {
+  @PostConstruct
+  public void postConstruct() {
     Assert.isTrue(docxMaxSize > 0L);
     Assert.isTrue(xlsxMaxSize > 0L);
     Assert.isTrue(pptxMaxSize > 0L);

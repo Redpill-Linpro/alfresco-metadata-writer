@@ -1,91 +1,24 @@
 <?xml version='1.0' encoding='UTF-8'?>
 
 <beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
-  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
+  xmlns:context="http://www.springframework.org/schema/context"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd">
 
-  <bean id="metadata-writer.dictionaryBootstrap" parent="dictionaryModelBootstrap" depends-on="dictionaryBootstrap">
-    <property name="models">
-      <list>
-        <value>alfresco/extension/model/metadataWriterModel.xml</value>
-      </list>
-    </property>
+  <!-- ####################################################################################################### -->
+  <!-- By some strange reason there are errors in Alfresco if the <context:annotation-config /> is being used. -->
+  <!-- In order to fix this a AutowiredAnnotationBeanPostProcessor is registered and annotation-config=false -->
+  <!-- is configured. If this is done all works fine -->
+  <!-- ####################################################################################################### -->
+  
+  <bean class="org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor" />
+  <bean class="org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor">
+    <property name="initAnnotationType" value="javax.annotation.PostConstruct" />
+    <property name="destroyAnnotationType" value="javax.annotation.PreDestroy" />
   </bean>
+  <bean class="org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor" />
+  <bean class="org.springframework.context.annotation.ConfigurationClassPostProcessor" />
 
-  <!-- The Metadata service registry -->
-  <bean id="metadata-writer.serviceRegistry" class="org.redpill.alfresco.module.metadatawriter.factories.impl.MetadataServiceRegistryImpl" />
-
-  <!-- Factory amd instantiators for content types -->
-  <bean id="metadata-writer.MSWordInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.POIFSContentInstantiator$MSWordContentInstantiator" />
-
-  <bean id="metadata-writer.MSExcelInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.POIFSContentInstantiator$MSExcelContentInstantiator" />
-
-  <bean id="metadata-writer.MSPowerPointInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.POIFSContentInstantiator$MSPowerPointContentInstantiator" />
-
-  <bean id="metadata-writer.MSWordInstantiatorX" class="org.redpill.alfresco.module.metadatawriter.services.impl.POIXContentInstantiator$MSWordContentInstantiator" />
-
-  <bean id="metadata-writer.MSExcelInstantiatorX" class="org.redpill.alfresco.module.metadatawriter.services.impl.POIXContentInstantiator$MSExcelContentInstantiator" />
-
-  <bean id="metadata-writer.MSPowerPointInstantiatorX" class="org.redpill.alfresco.module.metadatawriter.services.impl.POIXContentInstantiator$MSPowerPointContentInstantiator" />
-
-  <bean id="metadata-writer.PdfInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.PdfContentInstantiator" />
-
-  <bean id="metadata-writer.OdfInstantiator" class="org.redpill.alfresco.module.metadatawriter.services.impl.OpenDocumentFormatContentInstantiator" />
-
-  <bean id="metadata-writer.contentFactory" class="org.redpill.alfresco.module.metadatawriter.factories.impl.MetadataContentFactoryImpl">
-    <constructor-arg type="org.alfresco.service.cmr.repository.ContentService">
-      <ref bean="ContentService" />
-    </constructor-arg>
-    <constructor-arg type="java.util.Set">
-      <set>
-        <ref bean="metadata-writer.MSWordInstantiator" />
-        <ref bean="metadata-writer.MSExcelInstantiator" />
-        <ref bean="metadata-writer.MSPowerPointInstantiator" />
-        <ref bean="metadata-writer.MSWordInstantiatorX" />
-        <ref bean="metadata-writer.MSExcelInstantiatorX" />
-        <ref bean="metadata-writer.MSPowerPointInstantiatorX" />
-        <ref bean="metadata-writer.PdfInstantiator" />
-        <ref bean="metadata-writer.OdfInstantiator" />
-      </set>
-    </constructor-arg>
-  </bean>
-
-  <!-- The write metadata aspect -->
-  <bean id="metadata-writer.writeMetadataAspect" class="org.redpill.alfresco.module.metadatawriter.aspect.impl.ExportMetadataAspect">
-    <property name="metadataServiceRegistry" ref="metadata-writer.serviceRegistry" />
-    <property name="nodeService" ref="NodeService" />
-    <property name="policyComponent" ref="policyComponent" />
-    <property name="lockService" ref="LockService" />
-    <property name="runAsSystem" value="${metadata-writer.runAsSystem}" />
-  </bean>
-
-  <!-- Metadata service abstract bean -->
-  <bean id="metadata-writer.abstract.service" class="org.redpill.alfresco.module.metadatawriter.services.impl.MetadataServiceImpl" init-method="register" abstract="true">
-    <property name="metadataServiceRegistry" ref="metadata-writer.serviceRegistry" />
-    <property name="metadataContentFactory" ref="metadata-writer.contentFactory" />
-    <property name="namespaceService" ref="NamespaceService" />
-    <property name="transactionService" ref="TransactionService" />
-    <property name="behaviourFilter" ref="policyBehaviourFilter" />
-    <property name="nodeService" ref="NodeService" />
-    <property name="actionService" ref="ActionService" />
-    <property name="nodeMetadataProcessor" ref="metadata-writer.metadataProcessor" />
-    <property name="nodeVerifierProcessor" ref="metadata-writer.verifierProcessor" />
-    <property name="timeout" value="${metadata-writer.default.timeout}" />
-    <property name="deleteRenditions" value="true" />
-    <property name="failSilentlyOnTimeout" value="${metadata-writer.default.failSilentlyOnTimeout}" />
-  </bean>
-
-  <bean id="metadata-writer.metadataProcessor" class="org.redpill.alfresco.module.metadatawriter.services.impl.DefaultMetadataProcessor">
-    <constructor-arg type="org.alfresco.service.cmr.repository.NodeService" ref="NodeService" />
-  </bean>
-
-  <bean id="metadata-writer.verifierProcessor" class="org.redpill.alfresco.module.metadatawriter.services.impl.DefaultVerifierProcessor">
-    <constructor-arg type="org.alfresco.service.cmr.repository.NodeService" ref="NodeService" />
-    <constructor-arg type="org.alfresco.service.cmr.lock.LockService" ref="LockService" />
-    <constructor-arg type="org.alfresco.service.cmr.dictionary.DictionaryService" ref="DictionaryService" />
-    <constructor-arg type="org.alfresco.service.cmr.repository.ContentService" ref="ContentService" />
-    <property name="docxMaxSize" value="${metadata-writer.maxFileSize.docx}" />
-    <property name="xlsxMaxSize" value="${metadata-writer.maxFileSize.xlsx}" />
-    <property name="pptxMaxSize" value="${metadata-writer.maxFileSize.pptx}" />
-  </bean>
+  <context:component-scan base-package="org.redpill.alfresco.module.metadatawriter" annotation-config="false" />
 
 </beans>

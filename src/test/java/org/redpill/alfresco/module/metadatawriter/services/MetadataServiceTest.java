@@ -1,6 +1,7 @@
 package org.redpill.alfresco.module.metadatawriter.services;
 
 import org.alfresco.repo.policy.BehaviourFilter;
+import org.alfresco.service.cmr.action.ActionService;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.namespace.NamespaceService;
@@ -24,7 +25,6 @@ import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-
 public class MetadataServiceTest {
   private static final String SERVICE_NAME = "test-service";
 
@@ -37,6 +37,7 @@ public class MetadataServiceTest {
   private TransactionService transactionService = null;
   private BehaviourFilter behaviourFilter = mockery.mock(BehaviourFilter.class);
   private NodeService nodeService = mockery.mock(NodeService.class);
+  private ActionService actionService = mockery.mock(ActionService.class);
 
   private NodeRef contentRef = new NodeRef(":///content");
 
@@ -45,10 +46,9 @@ public class MetadataServiceTest {
 
   private List<ValueConverter> converters = new ArrayList<ValueConverter>();
 
-
-  //---------------------------------------------------
-  //Setup
-  //---------------------------------------------------
+  // ---------------------------------------------------
+  // Setup
+  // ---------------------------------------------------
   @Before
   public void setUp() {
     properties.clear();
@@ -57,26 +57,27 @@ public class MetadataServiceTest {
 
   @After
   public void verify() {
-//		mockery.assertIsSatisfied();
+    // mockery.assertIsSatisfied();
   }
 
-  //---------------------------------------------------
-  //Test
-  //---------------------------------------------------
+  // ---------------------------------------------------
+  // Test
+  // ---------------------------------------------------
   @Test
   public void register() {
 
     final MetadataServiceImpl s = createService();
 
-    mockery.checking(new Expectations() {{
-      oneOf(registry).register(s);
-    }});
+    mockery.checking(new Expectations() {
+      {
+        oneOf(registry).register(s);
+      }
+    });
 
-    s.register();
+    s.postConstruct();
   }
 
-
-//  @Test
+  // @Test
   public void storeEmptyProperties() throws UpdateMetadataException, ContentException, UnsupportedMimetypeException, IOException {
     expectCreateContent();
     expectNoExport();
@@ -90,8 +91,7 @@ public class MetadataServiceTest {
     startTest(s);
   }
 
-
-//  @Test
+  // @Test
   public void noMapping() throws ContentException, UpdateMetadataException, UnsupportedMimetypeException, IOException {
 
     addProperty(createQName("1"), "ett");
@@ -105,7 +105,7 @@ public class MetadataServiceTest {
 
   }
 
-//  @Test
+  // @Test
   public void nullProperty() throws ContentException, UpdateMetadataException, UnsupportedMimetypeException, IOException {
 
     addProperty("{a}prop", null);
@@ -118,11 +118,10 @@ public class MetadataServiceTest {
     startTest(createService());
   }
 
-//  @Test
+  // @Test
   public void storeOneProperty() throws ContentException, UpdateMetadataException, UnsupportedMimetypeException, IOException {
     addProperty("{a}prop", "the-property-value");
     createMapping("key", "a:prop");
-
 
     expectCreateContent();
     expectExport("key", "the-property-value");
@@ -131,7 +130,7 @@ public class MetadataServiceTest {
     startTest(createService());
   }
 
-//  @Test
+  // @Test
   public void storeMultipleProperties() throws ContentException, UpdateMetadataException, UnsupportedMimetypeException, IOException {
     addPropertyAndMapping("one", "a:value1");
     addPropertyAndMapping("two", "a:value2");
@@ -153,7 +152,7 @@ public class MetadataServiceTest {
     startTest(createService());
   }
 
-//  @Test
+  // @Test
   public void storeConvertedValue() throws UnsupportedMimetypeException, IOException, ContentException, UpdateMetadataException {
 
     final Date v = new Date();
@@ -172,20 +171,22 @@ public class MetadataServiceTest {
     startTest(createService());
   }
 
-  //---------------------------------------------------
-  //Helpers
-  //---------------------------------------------------
+  // ---------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------
 
   private void createConverter(final Serializable value, final Serializable convertedValue) {
     final ValueConverter c = mockery.mock(ValueConverter.class, "Convert " + value + "->" + convertedValue);
     converters.add(c);
 
-    mockery.checking(new Expectations() {{
-      allowing(c).applicable(value);
-      will(returnValue(true));
-      allowing(c).convert(value);
-      will(returnValue(convertedValue));
-    }});
+    mockery.checking(new Expectations() {
+      {
+        allowing(c).applicable(value);
+        will(returnValue(true));
+        allowing(c).convert(value);
+        will(returnValue(convertedValue));
+      }
+    });
 
   }
 
@@ -196,15 +197,36 @@ public class MetadataServiceTest {
   private void createMapping(String key, final String value) {
     metadataMapping.put(key, value);
 
-    mockery.checking(new Expectations() {{
-      allowing(namespaceService).getNamespaceURI(value.substring(0, value.indexOf(QName.NAMESPACE_PREFIX)));
-      will(returnValue(value.substring(0, value.indexOf(QName.NAMESPACE_PREFIX))));
-    }});
+    mockery.checking(new Expectations() {
+      {
+        allowing(namespaceService).getNamespaceURI(value.substring(0, value.indexOf(QName.NAMESPACE_PREFIX)));
+        will(returnValue(value.substring(0, value.indexOf(QName.NAMESPACE_PREFIX))));
+      }
+    });
 
   }
 
   private MetadataServiceImpl createService() {
-    return new MetadataServiceImpl(registry, contentFactory, namespaceService, transactionService, behaviourFilter, metadataMapping, SERVICE_NAME, converters, nodeService);
+    MetadataServiceImpl metadataService = new MetadataServiceImpl() {
+
+      @Override
+      public String getServiceName() {
+        return SERVICE_NAME;
+      }
+
+    };
+
+    metadataService.setActionService(actionService);
+    metadataService.setBehaviourFilter(behaviourFilter);
+    metadataService.setConverters(converters);
+    metadataService.setMappings(metadataMapping);
+    metadataService.setMetadataContentFactory(contentFactory);
+    metadataService.setMetadataServiceRegistry(registry);
+    metadataService.setNamespaceService(namespaceService);
+    metadataService.setNodeService(nodeService);
+    metadataService.setTransactionService(transactionService);
+    
+    return metadataService;
   }
 
   private void startTest(MetadataServiceImpl service) throws UpdateMetadataException {
@@ -225,33 +247,41 @@ public class MetadataServiceTest {
     return QName.createQName(QName.NAMESPACE_BEGIN + "namespace" + QName.NAMESPACE_END + key);
   }
 
-  //---------------------------------------------------
-  //Mocking
-  //---------------------------------------------------
+  // ---------------------------------------------------
+  // Mocking
+  // ---------------------------------------------------
 
   private void expectCreateContent() throws UnsupportedMimetypeException, IOException {
-    mockery.checking(new Expectations() {{
-      oneOf(contentFactory).createContent(contentRef);
-      will(returnValue(content));
-    }});
+    mockery.checking(new Expectations() {
+      {
+        oneOf(contentFactory).createContent(contentRef);
+        will(returnValue(content));
+      }
+    });
   }
 
   private void expectExport(final String field, final String value) throws ContentException {
-    mockery.checking(new Expectations() {{
-      oneOf(content).writeMetadata(field, value);
-    }});
+    mockery.checking(new Expectations() {
+      {
+        oneOf(content).writeMetadata(field, value);
+      }
+    });
   }
 
   private void expectSave() throws ContentException {
-    mockery.checking(new Expectations() {{
-      oneOf(content).save();
-    }});
+    mockery.checking(new Expectations() {
+      {
+        oneOf(content).save();
+      }
+    });
   }
 
   private void expectNoExport() throws ContentException {
-    mockery.checking(new Expectations() {{
-      never(content).writeMetadata(with(any(String.class)), with(any(String.class)));
-    }});
+    mockery.checking(new Expectations() {
+      {
+        never(content).writeMetadata(with(any(String.class)), with(any(String.class)));
+      }
+    });
   }
 
 }

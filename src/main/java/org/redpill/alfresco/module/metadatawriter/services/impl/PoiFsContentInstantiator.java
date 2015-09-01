@@ -9,11 +9,11 @@ import org.alfresco.service.cmr.repository.ContentReader;
 import org.alfresco.service.cmr.repository.ContentWriter;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataContentInstantiator;
-import org.redpill.alfresco.module.metadatawriter.services.odf.impl.OdfContentFacade;
+import org.redpill.alfresco.module.metadatawriter.services.poifs.impl.POIFSContentFacade;
 import org.springframework.stereotype.Component;
 
-@Component("metadata-writer.OdfInstantiator")
-public class OpenDocumentFormatContentInstantiator implements MetadataContentInstantiator {
+@Component("metadata-writer.PoiFsInstantiator")
+public class PoiFsContentInstantiator implements MetadataContentInstantiator {
 
   @Override
   public ContentFacade create(ContentReader reader, ContentWriter writer) throws IOException {
@@ -22,15 +22,12 @@ public class OpenDocumentFormatContentInstantiator implements MetadataContentIns
 
   @Override
   public ContentFacade create(InputStream inputStream, OutputStream outputStream) throws IOException {
-    return new OdfContentFacade(inputStream, outputStream);
+    return new POIFSContentFacade(inputStream, outputStream);
   }
 
   @Override
   public boolean supports(String mimetype) {
-    return MimetypeMap.MIMETYPE_OPENDOCUMENT_TEXT.equalsIgnoreCase(mimetype) || MimetypeMap.MIMETYPE_OPENDOCUMENT_SPREADSHEET.equalsIgnoreCase(mimetype)
-        || MimetypeMap.MIMETYPE_OPENDOCUMENT_PRESENTATION.equalsIgnoreCase(mimetype) || MimetypeMap.MIMETYPE_OPENDOCUMENT_CHART.equalsIgnoreCase(mimetype)
-        || MimetypeMap.MIMETYPE_OPENDOCUMENT_DATABASE.equalsIgnoreCase(mimetype) || MimetypeMap.MIMETYPE_OPENDOCUMENT_FORMULA.equalsIgnoreCase(mimetype)
-        || MimetypeMap.MIMETYPE_OPENDOCUMENT_GRAPHICS.equalsIgnoreCase(mimetype) || MimetypeMap.MIMETYPE_OPENDOCUMENT_IMAGE.equalsIgnoreCase(mimetype);
+    return MimetypeMap.MIMETYPE_WORD.equalsIgnoreCase(mimetype) || MimetypeMap.MIMETYPE_EXCEL.equalsIgnoreCase(mimetype) || MimetypeMap.MIMETYPE_PPT.equalsIgnoreCase(mimetype);
   }
 
 }

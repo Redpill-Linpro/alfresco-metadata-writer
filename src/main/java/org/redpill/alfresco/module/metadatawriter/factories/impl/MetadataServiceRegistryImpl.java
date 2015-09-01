@@ -6,7 +6,9 @@ import java.util.Set;
 import org.redpill.alfresco.module.metadatawriter.factories.MetadataServiceRegistry;
 import org.redpill.alfresco.module.metadatawriter.factories.UnknownServiceNameException;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataService;
+import org.springframework.stereotype.Component;
 
+@Component("metadata-writer.serviceRegistry")
 public class MetadataServiceRegistryImpl implements MetadataServiceRegistry {
 
   private final Set<MetadataService> _services = new HashSet<MetadataService>();

@@ -13,7 +13,10 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.poi.POIXMLDocument;
+import org.apache.poi.POIXMLProperties;
+import org.apache.poi.POIXMLProperties.CoreProperties;
 import org.apache.poi.POIXMLProperties.CustomProperties;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.xslf.XSLFSlideShow;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -72,6 +75,8 @@ public class POIXFacadeImpl implements POIXFacade {
 
     try {
       result = new XSLFSlideShow(pkg);
+    } catch (InvalidFormatException ex) { 
+      throw new org.redpill.alfresco.module.metadatawriter.InvalidFormatException(ex);
     } catch (Exception ex) {
     }
 
@@ -83,6 +88,10 @@ public class POIXFacadeImpl implements POIXFacade {
       result = new XSSFWorkbook(pkg);
     } catch (Exception ex) {
     }
+    
+    if (result == null) {
+      throw new RuntimeException("Couldn't instantiate any document properties from file!");
+    }
 
     return result;
   }
@@ -92,13 +101,19 @@ public class POIXFacadeImpl implements POIXFacade {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Exporting metadata " + field + "=" + value);
     }
+    
+    if (_document == null) {
+      return;
+    }
 
-    CustomProperties customProperties = _document.getProperties().getCustomProperties();
+    POIXMLProperties properties = _document.getProperties();
+    
+    CustomProperties customProperties = properties.getCustomProperties();
 
     if (customProperties.contains(field)) {
-      List<CTProperty> properties = customProperties.getUnderlyingProperties().getPropertyList();
+      List<CTProperty> underlyingProperties = customProperties.getUnderlyingProperties().getPropertyList();
 
-      for (CTProperty property : properties) {
+      for (CTProperty property : underlyingProperties) {
         if (!property.getName().equalsIgnoreCase(field)) {
           continue;
         }
@@ -112,7 +127,17 @@ public class POIXFacadeImpl implements POIXFacade {
 
   @Override
   public void setTitle(String title) throws ContentException {
-    _document.getProperties().getCoreProperties().setTitle(Normalizer.normalize(title, Form.NFKC));
+    if (_document == null) {
+      return;
+    }
+    
+    String normalizedTitle = Normalizer.normalize(title, Form.NFKC);
+    
+    POIXMLProperties properties = _document.getProperties();
+    
+    CoreProperties coreProperties = properties.getCoreProperties();
+    
+    coreProperties.setTitle(normalizedTitle);
   }
 
   @Override

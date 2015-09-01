@@ -80,13 +80,13 @@ public class ExportMetadataAspectTest {
     //aspect.setRunAsSystem(false);
     //assertEquals(false, aspect.getRunAsSystem());
     aspect.setRunAsSystem("false");
-    assertEquals(false, aspect.getRunAs());
+    assertEquals(false, aspect.isRunAsSystem());
     aspect.setRunAsSystem("true");
-    assertEquals(true, aspect.getRunAs());
+    assertEquals(true, aspect.isRunAsSystem());
     aspect.setRunAsSystem("somethingotherthantrueorfalse");
-    assertEquals(false, aspect.getRunAs());
+    assertEquals(false, aspect.isRunAsSystem());
     aspect.setRunAsSystem(null);
-    assertEquals(false, aspect.getRunAs());
+    assertEquals(false, aspect.isRunAsSystem());
   }
   
   @Test
