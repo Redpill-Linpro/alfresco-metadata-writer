@@ -519,5 +519,13 @@ public class MetadataServiceImpl implements MetadataService {
   public void setServiceName(String serviceName) {
     _serviceName = serviceName;
   }
+  
+  public void setNodeMetadataProcessor(NodeMetadataProcessor nodeMetadataProcessor) {
+    this._nodeMetadataProcessor = nodeMetadataProcessor;
+  }
+
+  public void setNodeVerifierProcessor(NodeVerifierProcessor nodeVerifierProcessor) {
+    this._nodeVerifierProcessor = nodeVerifierProcessor;
+  }
 
 }
