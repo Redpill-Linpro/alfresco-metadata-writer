@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import org.alfresco.repo.content.MimetypeMap;
 import org.alfresco.service.cmr.repository.ContentReader;
 import org.alfresco.service.cmr.repository.ContentWriter;
+import org.apache.commons.io.IOUtils;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataContentInstantiator;
 import org.redpill.alfresco.module.metadatawriter.services.pdfbox.impl.PdfboxFacade;
@@ -22,7 +23,16 @@ public class PdfContentInstantiator implements MetadataContentInstantiator {
 
   @Override
   public ContentFacade create(ContentReader reader, ContentWriter writer) throws IOException {
-    return create(reader.getContentInputStream(), writer.getContentOutputStream());
+    InputStream contentInputStream = null;
+    OutputStream contentOutputStream = null;
+    try {
+      contentInputStream = reader.getContentInputStream();
+      contentOutputStream = writer.getContentOutputStream();
+      return create(contentInputStream, contentOutputStream);
+    } finally {
+      IOUtils.closeQuietly(contentInputStream);
+      IOUtils.closeQuietly(contentOutputStream);
+    }
   }
 
   @Override
