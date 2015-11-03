@@ -106,7 +106,7 @@ public class PdfboxFacade implements ContentFacade {
         }
       } else {
         copyOriginal = true;
-        
+
         LOG.warn("Did not write metadata to PDF document since it is encrypted.");
       }
 
@@ -135,6 +135,7 @@ public class PdfboxFacade implements ContentFacade {
     try {
       _xmpMetadata = _document.getDocumentCatalog().getMetadata().exportXMPMetadata();
     } catch (Throwable ex) {
+      LOG.debug(ex);
       return;
     }
   }
@@ -143,6 +144,7 @@ public class PdfboxFacade implements ContentFacade {
     try {
       _document.getDocumentCatalog().getMetadata().importXMPMetadata(_xmpMetadata);
     } catch (Throwable ex) {
+      LOG.debug(ex);
       return;
     }
   }
