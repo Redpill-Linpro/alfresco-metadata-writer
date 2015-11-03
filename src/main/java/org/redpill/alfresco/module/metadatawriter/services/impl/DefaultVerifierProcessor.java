@@ -28,7 +28,7 @@ public class DefaultVerifierProcessor implements NodeVerifierProcessor {
   @Autowired
   @Qualifier("NodeService")
   protected NodeService _nodeService;
-  
+
   @Autowired
   @Qualifier("LockService")
   protected LockService _lockService;
@@ -36,20 +36,22 @@ public class DefaultVerifierProcessor implements NodeVerifierProcessor {
   @Autowired
   @Qualifier("DictionaryService")
   protected DictionaryService _dictionaryService;
-  
+
   @Autowired
   @Qualifier("ContentService")
   protected ContentService _contentService;
 
   @Value("${metadata-writer.maxFileSize.docx}")
   protected long docxMaxSize = 0L;
-  
+
   @Value("${metadata-writer.maxFileSize.xlsx}")
   protected long xlsxMaxSize = 0L;
-  
+
   @Value("${metadata-writer.maxFileSize.pptx}")
   protected long pptxMaxSize = 0L;
 
+  
+  @SuppressWarnings("deprecation")
   public boolean verifyDocument(final NodeRef node) {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Starting to execute DefaultVerifierProcessor#verifyDocument");
@@ -61,10 +63,10 @@ public class DefaultVerifierProcessor implements NodeVerifierProcessor {
     // (locked document is updated)
     LockStatus lockStatus = _lockService.getLockStatus(node);
     LockType lockType = _lockService.getLockType(node);
-
+    
     if ((LockStatus.LOCKED.equals(lockStatus) || LockStatus.LOCK_OWNER.equals(lockStatus)) && !LockType.WRITE_LOCK.equals(lockType)) {
       if (LOG.isDebugEnabled()) {
-        LOG.debug("Node " + node + " ignored (locked with status " + _lockService.getLockStatus(node) + " and type " + lockType + ")");
+        LOG.info("Node " + node + " ignored (locked with status " + _lockService.getLockStatus(node) + " and type " + lockType + ")");
       }
 
       verified = false;
@@ -72,7 +74,7 @@ public class DefaultVerifierProcessor implements NodeVerifierProcessor {
 
     if (_dictionaryService.isSubClass(_nodeService.getType(node), ContentModel.TYPE_FOLDER)) {
       if (LOG.isDebugEnabled()) {
-        LOG.debug("Node " + node + " ignored (" + _nodeService.getType(node) + " is a folder-type)");
+        LOG.info("Node " + node + " ignored (" + _nodeService.getType(node) + " is a folder-type)");
       }
 
       verified = false;
@@ -81,42 +83,44 @@ public class DefaultVerifierProcessor implements NodeVerifierProcessor {
     // Check for OOXML formats size limit
 
     ContentReader reader = _contentService.getReader(node, ContentModel.PROP_CONTENT);
-    
+
     if (reader == null) {
       if (LOG.isDebugEnabled()) {
-        LOG.debug("Node " + node + " has no conent");
+        LOG.info("Node " + node + " has no conent");
       }
-      return false;
-    }
-    
-    String mimetype = reader.getMimetype();
-    
-    long size = reader.getSize();
-    
-    if (MimetypeMap.MIMETYPE_OPENXML_WORDPROCESSING.equalsIgnoreCase(mimetype) && size > docxMaxSize) {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Node " + node + " ignored (file size too big)");
-      }
-      
-      return false;
-    }
-    
-    if (MimetypeMap.MIMETYPE_OPENXML_SPREADSHEET.equalsIgnoreCase(mimetype) && size > xlsxMaxSize) {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Node " + node + " ignored (file size too big)");
-      }
-      
-      return false;
-    }
-    
-    if (MimetypeMap.MIMETYPE_OPENXML_PRESENTATION.equalsIgnoreCase(mimetype) && size > pptxMaxSize) {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Node " + node + " ignored (file size too big)");
-      }
-      
       return false;
     }
 
+    String mimetype = reader.getMimetype();
+
+    long size = reader.getSize();
+
+    if (MimetypeMap.MIMETYPE_OPENXML_WORDPROCESSING.equalsIgnoreCase(mimetype) && size > docxMaxSize) {
+      if (LOG.isDebugEnabled()) {
+        LOG.info("Node " + node + " ignored (file size too big)");
+      }
+
+      return false;
+    }
+
+    if (MimetypeMap.MIMETYPE_OPENXML_SPREADSHEET.equalsIgnoreCase(mimetype) && size > xlsxMaxSize) {
+      if (LOG.isDebugEnabled()) {
+        LOG.info("Node " + node + " ignored (file size too big)");
+      }
+
+      return false;
+    }
+
+    if (MimetypeMap.MIMETYPE_OPENXML_PRESENTATION.equalsIgnoreCase(mimetype) && size > pptxMaxSize) {
+      if (LOG.isDebugEnabled()) {
+        LOG.info("Node " + node + " ignored (file size too big)");
+      }
+
+      return false;
+    }
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Node " + node + " passed validation");
+    }
     return verified;
   }
 

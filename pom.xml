@@ -20,7 +20,7 @@
   <artifactId>metadatawriter</artifactId>
   <packaging>jar</packaging>
   <name>Metadata Writer Framework</name>
-  <version>4.2.10</version>
+  <version>4.2.11-SNAPSHOT</version>
 
   <dependencies>
     <dependency>
@@ -99,7 +99,7 @@
         <directory>src/main/config</directory>
         <includes>
           <include>**/*.xml</include>
-          <include>*.properties</include>
+          <include>**/*.properties</include>
         </includes>
       </resource>
     </resources>
