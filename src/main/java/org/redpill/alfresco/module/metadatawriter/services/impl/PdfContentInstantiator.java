@@ -8,6 +8,7 @@ import org.alfresco.repo.content.MimetypeMap;
 import org.alfresco.service.cmr.repository.ContentReader;
 import org.alfresco.service.cmr.repository.ContentWriter;
 import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataContentInstantiator;
 import org.redpill.alfresco.module.metadatawriter.services.pdfbox.impl.PdfboxFacade;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 @Component("metadata-writer.PdfInstantiator")
 public class PdfContentInstantiator implements MetadataContentInstantiator {
+  private static final Logger LOG = Logger.getLogger(PdfContentInstantiator.class);
 
   @Override
   public ContentFacade create(InputStream inputStream, OutputStream outputStream) {
@@ -30,8 +32,10 @@ public class PdfContentInstantiator implements MetadataContentInstantiator {
       contentOutputStream = writer.getContentOutputStream();
       return create(contentInputStream, contentOutputStream);
     } finally {
-      IOUtils.closeQuietly(contentInputStream);
-      IOUtils.closeQuietly(contentOutputStream);
+      // Do not close here, the streams are used later
+      // LOG.trace("Closing streams");
+      // IOUtils.closeQuietly(contentInputStream);
+      // IOUtils.closeQuietly(contentOutputStream);
     }
   }
 

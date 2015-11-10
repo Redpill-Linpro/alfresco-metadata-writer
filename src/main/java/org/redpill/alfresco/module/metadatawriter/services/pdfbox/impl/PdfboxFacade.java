@@ -120,6 +120,7 @@ public class PdfboxFacade implements ContentFacade {
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     } finally {
+      LOG.trace("Closing streams");
       closeQuietly(stamper);
       closeQuietly(reader);
       closeQuietly(_document);

@@ -12,6 +12,7 @@ import java.util.Date;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.Logger;
 import org.apache.poi.hpsf.CustomProperties;
 import org.apache.poi.hpsf.DocumentSummaryInformation;
 import org.apache.poi.hpsf.MarkUnsupportedException;
@@ -27,12 +28,12 @@ import org.apache.poi.poifs.filesystem.DocumentInputStream;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade.ContentException;
+import org.redpill.alfresco.module.metadatawriter.services.pdfbox.impl.PdfboxFacade;
 import org.redpill.alfresco.module.metadatawriter.services.poifs.POIFSFacade;
 
 public class POIFSFacadeImpl implements POIFSFacade {
 
-  private static Log logger = LogFactory.getLog(POIFSFacadeImpl.class);
-
+  private static final Logger LOG = Logger.getLogger(POIFSFacadeImpl.class);
   private POIFSFileSystem fileSystem;
   private OutputStream out;
   private InputStream in;
@@ -61,8 +62,8 @@ public class POIFSFacadeImpl implements POIFSFacade {
 
   public void setCustomMetadata(String field, String value) throws ContentException {
 
-    if (logger.isDebugEnabled()) {
-      logger.debug("Exporting metadata " + field + "=" + value);
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Exporting metadata " + field + "=" + value);
     }
 
     CustomProperties customProperties = getCustomProperties();
@@ -102,12 +103,12 @@ public class POIFSFacadeImpl implements POIFSFacade {
     try {
       fileSystem.writeFilesystem(out);
     } finally {
-      IOUtils.closeQuietly(in);
-      IOUtils.closeQuietly(out);
+      close();
     }
   }
 
   public void close() throws IOException {
+    LOG.trace("Closing streams");
     IOUtils.closeQuietly(out);
     IOUtils.closeQuietly(in);
   }
@@ -161,7 +162,7 @@ public class POIFSFacadeImpl implements POIFSFacade {
         PropertySet ps = createPropertySet(SummaryInformation.DEFAULT_STREAM_NAME);
         si = new SummaryInformation(ps);
       } catch (FileNotFoundException fnf) {
-        logger.debug("Summary information does not exist in file, creating new!");
+        LOG.debug("Summary information does not exist in file, creating new!");
         si = PropertySetFactory.newSummaryInformation();
       } catch (UnexpectedPropertySetTypeException e) {
         throw new ContentException("Summary information property set has invalid type", e);
@@ -176,7 +177,7 @@ public class POIFSFacadeImpl implements POIFSFacade {
       PropertySet ps = createPropertySet(DocumentSummaryInformation.DEFAULT_STREAM_NAME, fileSystem);
       return new DocumentSummaryInformation(ps);
     } catch (FileNotFoundException fnf) {
-      logger.debug("Document summary information does not exist in file, createing new!");
+      LOG.debug("Document summary information does not exist in file, createing new!");
 
       return PropertySetFactory.newDocumentSummaryInformation();
     } catch (UnexpectedPropertySetTypeException e) {

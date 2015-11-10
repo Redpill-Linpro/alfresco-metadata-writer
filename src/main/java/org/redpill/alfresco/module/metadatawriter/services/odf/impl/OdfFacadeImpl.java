@@ -119,6 +119,7 @@ public class OdfFacadeImpl implements OdfFacade {
   // ---------------------------------------------------
 
   private void closeStreams() {
+    LOG.trace("Closing streams");
     IOUtils.closeQuietly(_out);
     IOUtils.closeQuietly(_in);
   }
