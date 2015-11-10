@@ -25,7 +25,7 @@ public class MetadataContentFactoryImpl implements MetadataContentFactory {
   @Autowired
   @Qualifier("ContentService")
   private ContentService _contentService;
-  
+
   private Set<MetadataContentInstantiator> _instantiators;
 
   // ---------------------------------------------------
@@ -46,8 +46,10 @@ public class MetadataContentFactoryImpl implements MetadataContentFactory {
     if (instantiator == null) {
       throw new UnsupportedMimetypeException("This MetadataContentFactory does not support mimetype " + mimetype);
     }
+    ContentFacade result = null;
+    result = instantiator.create(getContentReader(contentNode), getContentWriter(contentNode));
 
-    return instantiator.create(getContentReader(contentNode), getContentWriter(contentNode));
+    return result;
   }
 
   @Override
@@ -117,13 +119,13 @@ public class MetadataContentFactoryImpl implements MetadataContentFactory {
 
     return writer;
   }
-  
+
   public void setInstantiators(Set<MetadataContentInstantiator> instantiators) {
     _instantiators = instantiators;
   }
-  
+
   public void setContentService(ContentService contentService) {
     _contentService = contentService;
   }
-  
+
 }

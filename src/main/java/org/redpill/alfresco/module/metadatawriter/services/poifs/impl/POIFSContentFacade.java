@@ -42,7 +42,7 @@ public class POIFSContentFacade implements ContentFacade {
       poifsFacade.writeProperties();
     } catch (IOException e) {
       throw new ContentException("Could not save metadata", e);
-    }
+    } 
   }
 
   @Override

@@ -183,6 +183,7 @@ public class POIXFacadeImpl implements POIXFacade {
   // ---------------------------------------------------
 
   private void closeStreams() throws IOException {
+    LOG.trace("Closing streams");
     IOUtils.closeQuietly(_out);
     IOUtils.closeQuietly(_in);
   }

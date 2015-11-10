@@ -8,6 +8,7 @@ import org.alfresco.repo.content.MimetypeMap;
 import org.alfresco.service.cmr.repository.ContentReader;
 import org.alfresco.service.cmr.repository.ContentWriter;
 import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
 import org.redpill.alfresco.module.metadatawriter.services.MetadataContentInstantiator;
 import org.redpill.alfresco.module.metadatawriter.services.poifs.impl.POIFSContentFacade;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 @Component("metadata-writer.PoiFsInstantiator")
 public class PoiFsContentInstantiator implements MetadataContentInstantiator {
+  private static final Logger LOG = Logger.getLogger(PoiFsContentInstantiator.class);
 
   @Override
   public ContentFacade create(ContentReader reader, ContentWriter writer) throws IOException {
@@ -24,9 +26,11 @@ public class PoiFsContentInstantiator implements MetadataContentInstantiator {
       contentInputStream = reader.getContentInputStream();
       contentOutputStream = writer.getContentOutputStream();
       return create(contentInputStream, contentOutputStream);
-    } finally {
+    } catch (Exception e) {
+      LOG.trace("Closing streams");
       IOUtils.closeQuietly(contentInputStream);
       IOUtils.closeQuietly(contentOutputStream);
+      throw e;
     }
   }
 

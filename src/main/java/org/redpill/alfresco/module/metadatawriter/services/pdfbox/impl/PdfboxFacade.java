@@ -38,17 +38,19 @@ public class PdfboxFacade implements ContentFacade {
 
   private File tempFile, tempFile2;
 
-  public PdfboxFacade(InputStream inputStream, OutputStream outputStream) {
+  public PdfboxFacade(InputStream inputStream, OutputStream outputStream) throws IOException {
     if (inputStream == null) {
       throw new ContentIOException("The input stream is null!");
     }
 
+    // try {
+    _inputStream = inputStream;
+
+    _outputStream = outputStream;
+
     try {
-      _inputStream = inputStream;
-
-      _outputStream = outputStream;
-
       tempFile = TempFileProvider.createTempFile(_inputStream, "metadatawriter_", ".pdf");
+
       tempInputStream = new FileInputStream(tempFile);
       _document = PDDocument.load(tempFile);
 
@@ -56,8 +58,12 @@ public class PdfboxFacade implements ContentFacade {
       // metadata and regular PDF metadata
       loadXmpMetadata();
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      // TODO Auto-generated catch block
+      throw new IOException(e);
     }
+    // } catch (Exception e) {
+    // throw new RuntimeException(e);
+    // }
   }
 
   @Override
@@ -120,6 +126,7 @@ public class PdfboxFacade implements ContentFacade {
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     } finally {
+      LOG.trace("Closing streams");
       closeQuietly(stamper);
       closeQuietly(reader);
       closeQuietly(_document);
