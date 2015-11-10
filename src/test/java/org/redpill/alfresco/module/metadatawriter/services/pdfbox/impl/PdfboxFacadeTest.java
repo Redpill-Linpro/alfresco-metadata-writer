@@ -16,7 +16,7 @@ import org.redpill.alfresco.module.metadatawriter.services.ContentFacade.Content
 public class PdfboxFacadeTest {
 
   @Test
-  public void testPdfWithForm() {
+  public void testPdfWithForm() throws IOException {
     String filename = "test_form.pdf";
     InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(filename);
     
@@ -53,7 +53,7 @@ public class PdfboxFacadeTest {
   }
   
   @Test
-  public void testPdfWithoutForm() {
+  public void testPdfWithoutForm() throws IOException {
     String filename = "test.pdf";
     InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(filename);
     

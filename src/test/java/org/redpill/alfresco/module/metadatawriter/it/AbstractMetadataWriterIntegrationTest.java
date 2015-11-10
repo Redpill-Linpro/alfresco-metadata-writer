@@ -11,6 +11,7 @@ import org.alfresco.repo.content.metadata.MetadataExtracter;
 import org.alfresco.repo.content.metadata.MetadataExtracterRegistry;
 import org.alfresco.service.cmr.repository.ContentData;
 import org.alfresco.service.cmr.repository.ContentReader;
+import org.alfresco.service.cmr.repository.MimetypeService;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.datatype.DefaultTypeConverter;
 import org.alfresco.service.namespace.QName;
@@ -25,6 +26,9 @@ public abstract class AbstractMetadataWriterIntegrationTest extends AbstractRepo
 
   @Autowired
   private MetadataExtracterRegistry _metadataExtracterRegistry;
+  
+  @Autowired
+  private MimetypeService _mimetypeService;
 
   protected void assertTitle(NodeRef document, String expected) {
     assertProperty(document, expected, ContentModel.PROP_TITLE);
@@ -32,8 +36,14 @@ public abstract class AbstractMetadataWriterIntegrationTest extends AbstractRepo
 
   protected void assertProperty(NodeRef document, String expected, QName property) {
     ContentData contentData = (ContentData) _nodeService.getProperty(document, ContentModel.PROP_CONTENT);
-
-    String mimetype = contentData.getMimetype();
+    String fileName = (String) _nodeService.getProperty(document, ContentModel.PROP_NAME);
+    
+    String mimetype = null;
+    if (contentData!=null) {
+      mimetype = contentData.getMimetype();
+    } else {
+      mimetype = _mimetypeService.guessMimetype(fileName);
+    }
 
     MetadataExtracter extracter = _metadataExtracterRegistry.getExtracter(mimetype);
 

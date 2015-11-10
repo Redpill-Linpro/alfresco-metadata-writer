@@ -49,7 +49,7 @@
     <dependency>
       <groupId>org.redpill-linpro.alfresco</groupId>
       <artifactId>alfresco-test-repo</artifactId>
-      <version>1.0.14</version>
+      <version>1.0.15-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
 

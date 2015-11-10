@@ -1,6 +1,7 @@
 package org.redpill.alfresco.module.metadatawriter.it;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,6 +67,56 @@ public class MetadataServiceIntegrationTest extends AbstractMetadataWriterIntegr
   }
 
   @Test
+  public void testWriteEmptyPdf() {
+    doTestWrite("empty.pdf", null, true, true);
+  }
+  
+  @Test
+  public void testWriteEmptyDoc() {
+    doTestWrite("empty.doc", null, true, true);
+  }
+  
+  @Test
+  public void testWriteEmptyXls() {
+    doTestWrite("empty.xls", null, true, true);
+  }
+  
+  @Test
+  public void testWriteEmptyPpt() {
+    doTestWrite("empty.ppt", null, true, true);
+  }
+  
+  @Test
+  public void testWriteEmptyDocx() {
+    doTestWrite("empty.docx", null, true, true);
+  }
+  
+  @Test
+  public void testWriteEmptyXlsx() {
+    doTestWrite("empty.xlsx", null, true, true);
+  }
+  
+  @Test
+  public void testWriteEmptyPptx() {
+    doTestWrite("empty.pptx", null, true, true);
+  }
+  
+  @Test
+  public void testWriteEmptyOdt() {
+    doTestWrite("empty.odt", null, true, true);
+  }
+  
+  @Test
+  public void testWriteEmptyOds() {
+    doTestWrite("empty.ods", null, true, true);
+  }
+  
+  @Test
+  public void testWriteEmptyOdp() {
+    doTestWrite("empty.odp", null, true, true);
+  }
+  
+  @Test
   public void testWriteDoc() throws ContentIOException, IOException, ContentException, UnexpectedPropertySetTypeException {
     doTestWrite("test.doc");
   }
@@ -102,25 +153,25 @@ public class MetadataServiceIntegrationTest extends AbstractMetadataWriterIntegr
 
   @Test
   public void testWritePdf1() throws ContentIOException, COSVisitorException, IOException, CryptographyException, InvalidPasswordException {
-    doTestWritePdf("test.pdf", true, 7996);
+    doTestWritePdf("test.pdf", true, 7990, 8000);
   }
 
   @Test
   public void testWritePdf2() throws ContentIOException, COSVisitorException, IOException, CryptographyException, InvalidPasswordException {
-    doTestWritePdf("secure.pdf", false, 18097);
+    doTestWritePdf("secure.pdf", false, 18090, 18100);
   }
 
   @Test
   public void testWritePdf3() throws ContentIOException, COSVisitorException, IOException, CryptographyException, InvalidPasswordException {
-    doTestWritePdf("test_pdfa.pdf", true, 22644);
+    doTestWritePdf("test_pdfa.pdf", true, 22650, 22660);
   }
 
-  public void doTestWritePdf(String filename, boolean validate, int expectedSize) throws ContentIOException, IOException, COSVisitorException, CryptographyException, InvalidPasswordException {
-    NodeRef document = doTestWrite(filename, null, validate);
+  public void doTestWritePdf(String filename, boolean validate, int expectedMin, int expectedMax) throws ContentIOException, IOException, COSVisitorException, CryptographyException, InvalidPasswordException {
+    NodeRef document = doTestWrite(filename, null, validate, false);
 
     ContentReader reader = _contentService.getReader(document, ContentModel.PROP_CONTENT);
 
-    assertEquals(expectedSize, reader.getSize());
+    assertBetween(expectedMin,expectedMax, reader.getSize());
 
     PDDocument pdfDocument = PDDocument.load(reader.getContentInputStream());
 
@@ -141,15 +192,20 @@ public class MetadataServiceIntegrationTest extends AbstractMetadataWriterIntegr
     }
   }
 
+  private void assertBetween(long expectedMin, long expectedMax, long actual) {
+    assertTrue("Expected "+actual+ " to be greater or equal to "+expectedMin, expectedMin<=actual);
+    assertTrue("Expected "+actual+ " to be lesser or equal to "+expectedMax, expectedMax>=actual);
+  }
+
   public NodeRef doTestWrite(String filename) {
-    return doTestWrite(filename, null, true);
+    return doTestWrite(filename, null, true, false);
   }
 
   public NodeRef doTestWrite(String filename, String mimetype) {
-    return doTestWrite(filename, mimetype, true);
+    return doTestWrite(filename, mimetype, true, false);
   }
 
-  public NodeRef doTestWrite(String filename, String mimetype, boolean validate) {
+  public NodeRef doTestWrite(String filename, String mimetype, boolean validate, boolean expectNull) {
     setRequiresNew(true);
 
     final NodeRef document = uploadDocument(_site, filename).getNodeRef();
@@ -174,8 +230,10 @@ public class MetadataServiceIntegrationTest extends AbstractMetadataWriterIntegr
 
     NodeRef result = _transactionHelper.doInTransaction(callback, false, true);
 
-    if (validate) {
+    if (validate && !expectNull) {
       assertTitle(document, TEST_TITLE);
+    } else if (validate && expectNull) {
+      assertTitle(document, null);
     }
 
     return result;

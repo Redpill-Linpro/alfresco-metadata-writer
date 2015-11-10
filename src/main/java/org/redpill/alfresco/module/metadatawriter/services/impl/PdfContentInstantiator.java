@@ -19,7 +19,7 @@ public class PdfContentInstantiator implements MetadataContentInstantiator {
   private static final Logger LOG = Logger.getLogger(PdfContentInstantiator.class);
 
   @Override
-  public ContentFacade create(InputStream inputStream, OutputStream outputStream) {
+  public ContentFacade create(InputStream inputStream, OutputStream outputStream) throws IOException {
     return new PdfboxFacade(inputStream, outputStream);
   }
 
@@ -31,11 +31,11 @@ public class PdfContentInstantiator implements MetadataContentInstantiator {
       contentInputStream = reader.getContentInputStream();
       contentOutputStream = writer.getContentOutputStream();
       return create(contentInputStream, contentOutputStream);
-    } finally {
-      // Do not close here, the streams are used later
-      // LOG.trace("Closing streams");
-      // IOUtils.closeQuietly(contentInputStream);
-      // IOUtils.closeQuietly(contentOutputStream);
+    } catch (Exception e) {
+      LOG.trace("Closing streams");
+      IOUtils.closeQuietly(contentInputStream);
+      IOUtils.closeQuietly(contentOutputStream);
+      throw e;
     }
   }
 

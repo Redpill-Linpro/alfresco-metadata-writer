@@ -31,11 +31,11 @@ public class PoixContentInstantiator implements MetadataContentInstantiator {
       contentInputStream = reader.getContentInputStream();
       contentOutputStream = writer.getContentOutputStream();
       return create(contentInputStream, contentOutputStream);
-    } finally {
-      // Do not close here, the streams are used later
-      // LOG.trace("Closing streams");
-      // IOUtils.closeQuietly(contentInputStream);
-      // IOUtils.closeQuietly(contentOutputStream);
+    } catch (Exception e) {
+      LOG.trace("Closing streams");
+      IOUtils.closeQuietly(contentInputStream);
+      IOUtils.closeQuietly(contentOutputStream);
+      throw e;
     }
   }
 
