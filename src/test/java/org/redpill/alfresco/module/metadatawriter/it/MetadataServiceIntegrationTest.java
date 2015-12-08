@@ -244,5 +244,10 @@ public class MetadataServiceIntegrationTest extends AbstractMetadataWriterIntegr
 
     _metadataService.write(document);
   }
+  
+  @Test
+  public void testAssertCorrectModifierAfterMdw() {
+    
+  }
 
 }

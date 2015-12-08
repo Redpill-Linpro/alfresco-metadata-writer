@@ -195,6 +195,11 @@ public class MetadataServiceImpl implements MetadataService {
     RetryingTransactionHelper.RetryingTransactionCallback<Void> callback = new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
 
       public Void execute() throws Throwable {
+        // there's STILL some problems with this, have to disable all...
+        // _behaviourFilter.disableBehaviour(ContentModel.ASPECT_VERSIONABLE);
+        // _behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
+        // _behaviourFilter.disableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+        _behaviourFilter.disableBehaviour();
         if (contentRef == null || !_nodeService.exists(contentRef)) {
           LOG.warn("Node " + contentRef + " does not exist. Aborting writeNode...");
           return null;
@@ -233,14 +238,9 @@ public class MetadataServiceImpl implements MetadataService {
           }
         }
 
-        // there's STILL some problems with this, have to disable all...
-        // _behaviourFilter.disableBehaviour(ContentModel.ASPECT_VERSIONABLE);
-        // _behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
-        // _behaviourFilter.disableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
-        _behaviourFilter.disableBehaviour();
-
         try {
           content.save();
+          
         } catch (final ContentException e) {
           throw new UpdateMetadataException("Could not save after update!", e);
         } finally {
@@ -519,7 +519,7 @@ public class MetadataServiceImpl implements MetadataService {
   public void setServiceName(String serviceName) {
     _serviceName = serviceName;
   }
-  
+
   public void setNodeMetadataProcessor(NodeMetadataProcessor nodeMetadataProcessor) {
     this._nodeMetadataProcessor = nodeMetadataProcessor;
   }
