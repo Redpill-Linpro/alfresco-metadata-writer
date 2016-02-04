@@ -49,6 +49,9 @@ public class DefaultVerifierProcessor implements NodeVerifierProcessor {
 
   @Value("${metadata-writer.maxFileSize.pptx}")
   protected long pptxMaxSize = 0L;
+  
+  @Value("${metadata-writer.enabled}")
+  protected boolean enabled = true;
 
   
   @SuppressWarnings("deprecation")
@@ -56,7 +59,10 @@ public class DefaultVerifierProcessor implements NodeVerifierProcessor {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Starting to execute DefaultVerifierProcessor#verifyDocument");
     }
-
+    if (!enabled) {
+      LOG.info("Metadatawriter is disabled in configuration (metadata-writer.enabled), aborting...");
+      return false;
+    }
     boolean verified = true;
 
     // Check for locks has been removed as it won't work with vti edit-online
