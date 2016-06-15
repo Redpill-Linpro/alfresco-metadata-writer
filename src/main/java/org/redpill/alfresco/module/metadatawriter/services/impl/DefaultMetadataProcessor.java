@@ -20,7 +20,7 @@ public class DefaultMetadataProcessor implements NodeMetadataProcessor {
 
   @Autowired
   @Qualifier("NodeService")
-  private NodeService _nodeService;
+  protected NodeService _nodeService;
 
   @Override
   public Map<QName, Serializable> processNode(final NodeRef nodeRef) {
