@@ -170,6 +170,50 @@ public class MetadataServiceImpl implements MetadataService {
   // ---------------------------------------------------
 
   @Override
+  public void writeSynchronized(final NodeRef nodeRef) throws UpdateMetadataException {
+      AuthenticationUtil.runAsSystem(new AuthenticationUtil.RunAsWork<Void>() {
+
+          @Override
+          public Void doWork() throws Exception {
+            
+            doUpdateProperties(nodeRef);
+            return null;
+          }
+
+        });
+
+        if (_deleteRenditions) {
+          deleteRenditions(nodeRef);
+        }
+  	
+  }
+  
+  private void deleteRenditions(NodeRef nodeRef) {
+      final QName ASSOC_WEBPREVIEW = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "webpreview");
+      final QName ASSOC_PDF = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "pdf");
+      final QName ASSOC_DOCLIB = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "doclib");
+
+      // Delete web preview
+      triggerDeleteRendition(ASSOC_WEBPREVIEW, nodeRef);
+
+      // Delete pdf rendition
+      triggerDeleteRendition(ASSOC_PDF, nodeRef);
+
+      // Delete thumbnail (doclib)
+      triggerDeleteRendition(ASSOC_DOCLIB, nodeRef);
+    }
+
+    private void triggerDeleteRendition(final QName renditionQName, NodeRef nodeRef) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Deleting rendition " + renditionQName);
+      }
+
+      final Action deleteRenditionAction = _actionService.createAction(DeleteRenditionActionExecuter.NAME);
+      deleteRenditionAction.setParameterValue(DeleteRenditionActionExecuter.PARAM_RENDITION_DEFINITION_NAME, renditionQName);
+      _actionService.executeAction(deleteRenditionAction, nodeRef);
+    }
+  
+  @Override
   public void write(NodeRef document) throws UpdateMetadataException {
     write(document, null);
   }
@@ -527,5 +571,7 @@ public class MetadataServiceImpl implements MetadataService {
   public void setNodeVerifierProcessor(NodeVerifierProcessor nodeVerifierProcessor) {
     this._nodeVerifierProcessor = nodeVerifierProcessor;
   }
+
+
 
 }
