@@ -6,6 +6,8 @@ public interface MetadataService {
   
   public static final int DEFAULT_TIMEOUT = 120000;
 
+  void writeSynchronized(NodeRef nodeRef) throws UpdateMetadataException;
+  
   void write(NodeRef contentRef) throws UpdateMetadataException;
 
   void write(NodeRef nodeRef, MetadataWriterCallback callback) throws UpdateMetadataException;
