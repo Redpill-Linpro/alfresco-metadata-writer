@@ -3,9 +3,11 @@ package org.redpill.alfresco.module.metadatawriter.services.impl;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -54,6 +56,7 @@ import org.springframework.stereotype.Component;
 
 @Component("metadata-writer.abstract.service")
 public class MetadataServiceImpl implements MetadataService {
+
 
   private static final Logger LOG = Logger.getLogger(MetadataServiceImpl.class);
 
@@ -171,48 +174,48 @@ public class MetadataServiceImpl implements MetadataService {
 
   @Override
   public void writeSynchronized(final NodeRef nodeRef) throws UpdateMetadataException {
-      AuthenticationUtil.runAsSystem(new AuthenticationUtil.RunAsWork<Void>() {
+    AuthenticationUtil.runAsSystem(new AuthenticationUtil.RunAsWork<Void>() {
 
-          @Override
-          public Void doWork() throws Exception {
-            
-            doUpdateProperties(nodeRef);
-            return null;
-          }
+      @Override
+      public Void doWork() throws Exception {
 
-        });
-
-        if (_deleteRenditions) {
-          deleteRenditions(nodeRef);
-        }
-  	
-  }
-  
-  private void deleteRenditions(NodeRef nodeRef) {
-      final QName ASSOC_WEBPREVIEW = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "webpreview");
-      final QName ASSOC_PDF = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "pdf");
-      final QName ASSOC_DOCLIB = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "doclib");
-
-      // Delete web preview
-      triggerDeleteRendition(ASSOC_WEBPREVIEW, nodeRef);
-
-      // Delete pdf rendition
-      triggerDeleteRendition(ASSOC_PDF, nodeRef);
-
-      // Delete thumbnail (doclib)
-      triggerDeleteRendition(ASSOC_DOCLIB, nodeRef);
-    }
-
-    private void triggerDeleteRendition(final QName renditionQName, NodeRef nodeRef) {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Deleting rendition " + renditionQName);
+        doUpdateProperties(nodeRef);
+        return null;
       }
 
-      final Action deleteRenditionAction = _actionService.createAction(DeleteRenditionActionExecuter.NAME);
-      deleteRenditionAction.setParameterValue(DeleteRenditionActionExecuter.PARAM_RENDITION_DEFINITION_NAME, renditionQName);
-      _actionService.executeAction(deleteRenditionAction, nodeRef);
+    });
+
+    if (_deleteRenditions) {
+      deleteRenditions(nodeRef);
     }
-  
+
+  }
+
+  private void deleteRenditions(NodeRef nodeRef) {
+    final QName ASSOC_WEBPREVIEW = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "webpreview");
+    final QName ASSOC_PDF = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "pdf");
+    final QName ASSOC_DOCLIB = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "doclib");
+
+    // Delete web preview
+    triggerDeleteRendition(ASSOC_WEBPREVIEW, nodeRef);
+
+    // Delete pdf rendition
+    triggerDeleteRendition(ASSOC_PDF, nodeRef);
+
+    // Delete thumbnail (doclib)
+    triggerDeleteRendition(ASSOC_DOCLIB, nodeRef);
+  }
+
+  private void triggerDeleteRendition(final QName renditionQName, NodeRef nodeRef) {
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Deleting rendition " + renditionQName);
+    }
+
+    final Action deleteRenditionAction = _actionService.createAction(DeleteRenditionActionExecuter.NAME);
+    deleteRenditionAction.setParameterValue(DeleteRenditionActionExecuter.PARAM_RENDITION_DEFINITION_NAME, renditionQName);
+    _actionService.executeAction(deleteRenditionAction, nodeRef);
+  }
+
   @Override
   public void write(NodeRef document) throws UpdateMetadataException {
     write(document, null);
@@ -221,12 +224,28 @@ public class MetadataServiceImpl implements MetadataService {
   @Override
   public void write(NodeRef document, MetadataWriterCallback callback) throws UpdateMetadataException {
 
-    // set up the transaction listener
-    _transactionListener = new MetadataWriterTransactionListener();
-
-    AlfrescoTransactionSupport.bindListener(_transactionListener);
-    AlfrescoTransactionSupport.bindResource(KEY_UPDATER, new MetadataWriterUpdater(document, callback));
+    Set<TransactionListener> listeners = AlfrescoTransactionSupport.getListeners();
+    boolean bindListener = true;
+    for (TransactionListener tl : listeners) {
+      if (tl.getClass().equals(MetadataWriterTransactionListener.class)) {
+        bindListener = false;
+      }
+    }
+    if (bindListener) {
+      // set up the transaction listener
+      _transactionListener = new MetadataWriterTransactionListener();
+      AlfrescoTransactionSupport.bindListener(_transactionListener);
+    }
+    
+    Set<MetadataWriterUpdater> metadataWriterUpdaters = new HashSet<>();
+    if (AlfrescoTransactionSupport.getResource(KEY_UPDATER) != null) {
+      metadataWriterUpdaters = AlfrescoTransactionSupport.getResource(KEY_UPDATER);
+    }
+    metadataWriterUpdaters.add(new MetadataWriterUpdater(document, callback));
+    
+    AlfrescoTransactionSupport.bindResource(KEY_UPDATER, metadataWriterUpdaters);
     AlfrescoTransactionSupport.bindResource(KEY_FAIL_SILENTLY_ON_TIMEOUT, _failSilentlyOnTimeout);
+
   }
 
   // ---------------------------------------------------
@@ -284,7 +303,7 @@ public class MetadataServiceImpl implements MetadataService {
 
         try {
           content.save();
-          
+
         } catch (final ContentException e) {
           throw new UpdateMetadataException("Could not save after update!", e);
         } finally {
@@ -429,35 +448,37 @@ public class MetadataServiceImpl implements MetadataService {
 
     @Override
     public void afterCommit() {
-      MetadataWriterUpdater updater = AlfrescoTransactionSupport.getResource(KEY_UPDATER);
+      Set<MetadataWriterUpdater> updaters = AlfrescoTransactionSupport.getResource(KEY_UPDATER);
       boolean failSilentlyOnTimeout = AlfrescoTransactionSupport.getResource(KEY_FAIL_SILENTLY_ON_TIMEOUT);
 
-      if (updater == null) {
-        throw new Error("MetadataWriterUpdater was null after commit!");
+      if (updaters == null || updaters.isEmpty()) {
+        throw new Error("MetadataWriterUpdater was null or empty after commit!");
       }
 
-      FutureTask<Void> task = null;
-      try {
-        task = new FutureTask<Void>(updater);
-
-        _executorService.execute(task);
-
-        task.get(_timeout, TimeUnit.MILLISECONDS);
-      } catch (TimeoutException e) {
-        task.cancel(true);
-
-        LOG.warn(e.getMessage(), e);
-
-        if (!failSilentlyOnTimeout) {
+      for(MetadataWriterUpdater updater : updaters) {
+        FutureTask<Void> task = null;
+        try {
+          task = new FutureTask<Void>(updater);
+  
+          _executorService.execute(task);
+  
+          task.get(_timeout, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+          task.cancel(true);
+  
+          LOG.warn(e.getMessage(), e);
+  
+          if (!failSilentlyOnTimeout) {
+            throw new RuntimeException(e);
+          }
+        } catch (InterruptedException e) {
+          // We were asked to stop
+          task.cancel(true);
+  
+          return;
+        } catch (ExecutionException e) {
           throw new RuntimeException(e);
         }
-      } catch (InterruptedException e) {
-        // We were asked to stop
-        task.cancel(true);
-
-        return;
-      } catch (ExecutionException e) {
-        throw new RuntimeException(e);
       }
     }
   }
@@ -471,6 +492,8 @@ public class MetadataServiceImpl implements MetadataService {
       _nodeRef = nodeRef;
       _callback = callback;
     }
+    
+    
 
     @Override
     public Void call() throws Exception {
@@ -571,7 +594,5 @@ public class MetadataServiceImpl implements MetadataService {
   public void setNodeVerifierProcessor(NodeVerifierProcessor nodeVerifierProcessor) {
     this._nodeVerifierProcessor = nodeVerifierProcessor;
   }
-
-
 
 }
