@@ -3,9 +3,11 @@ package org.redpill.alfresco.module.metadatawriter.services.impl;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -55,523 +57,542 @@ import org.springframework.stereotype.Component;
 @Component("metadata-writer.abstract.service")
 public class MetadataServiceImpl implements MetadataService {
 
-  private static final Logger LOG = Logger.getLogger(MetadataServiceImpl.class);
 
-  private Map<QName, String> _metadataMapping;
+	private static final Logger LOG = Logger.getLogger(MetadataServiceImpl.class);
 
-  @Autowired
-  @Qualifier("metadata-writer.serviceRegistry")
-  private MetadataServiceRegistry _metadataServiceRegistry;
+	private Map<QName, String> _metadataMapping;
 
-  @Autowired
-  @Qualifier("metadata-writer.contentFactory")
-  private MetadataContentFactory _metadataContentFactory;
+	@Autowired
+	@Qualifier("metadata-writer.serviceRegistry")
+	private MetadataServiceRegistry _metadataServiceRegistry;
 
-  @Autowired
-  @Qualifier("NamespaceService")
-  private NamespaceService _namespaceService;
+	@Autowired
+	@Qualifier("metadata-writer.contentFactory")
+	private MetadataContentFactory _metadataContentFactory;
 
-  protected String _serviceName;
+	@Autowired
+	@Qualifier("NamespaceService")
+	private NamespaceService _namespaceService;
 
-  private List<ValueConverter> _converters;
+	protected String _serviceName;
 
-  @Autowired
-  @Qualifier("TransactionService")
-  private TransactionService _transactionService;
+	private List<ValueConverter> _converters;
 
-  @Autowired
-  @Qualifier("policyBehaviourFilter")
-  private BehaviourFilter _behaviourFilter;
+	@Autowired
+	@Qualifier("TransactionService")
+	private TransactionService _transactionService;
 
-  private TransactionListener _transactionListener;
+	@Autowired
+	@Qualifier("policyBehaviourFilter")
+	private BehaviourFilter _behaviourFilter;
 
-  @Autowired
-  @Qualifier("NodeService")
-  private NodeService _nodeService;
-
-  @Autowired
-  @Qualifier("metadata-writer.metadataProcessor")
-  private NodeMetadataProcessor _nodeMetadataProcessor;
-
-  @Autowired
-  @Qualifier("metadata-writer.verifierProcessor")
-  private NodeVerifierProcessor _nodeVerifierProcessor;
-
-  @Autowired
-  @Qualifier("ActionService")
-  private ActionService _actionService;
-
-  /**
-   * Controls if existing renditions will be deleted after a successful metadata
-   * write. If renditions are not deleted they may not reflect the actual node
-   * content Controls if existing renditions will be deleted after a successful
-   * metadata write. If renditions are not deleted they may not reflect the
-   * actual node content
-   */
-  @Value("${metadata-writer.deleteRenditions}")
-  private boolean _deleteRenditions = true;
-
-  private static final Object KEY_UPDATER = MetadataService.class.getName() + ".updater";
-  private static final Object KEY_FAIL_SILENTLY_ON_TIMEOUT = MetadataService.class.getName() + ".failSilently";
-  private ExecutorService _executorService;
-
-  @Value("${metadata-writer.default.timeout}")
-  private int _timeout = MetadataService.DEFAULT_TIMEOUT;
-
-  @Value("${metadata-writer.default.failSilentlyOnTimeout}")
-  private boolean _failSilentlyOnTimeout = false;
-
-  public void setConverters(List<ValueConverter> converters) {
-    _converters = converters;
-  }
-
-  public void setMappings(Properties mappings) {
-    _metadataMapping = convertMappings(mappings);
-  }
-
-  public void setFailSilentlyOnTimeout(String failSilentlyOnTimeout) {
-    if (LOG.isInfoEnabled()) {
-      LOG.info("Fail metadatawriter silently on timeout: " + failSilentlyOnTimeout);
-    }
-
-    _failSilentlyOnTimeout = StringUtils.isBlank(failSilentlyOnTimeout) ? false : failSilentlyOnTimeout.equalsIgnoreCase("true");
-  }
-
-  public void setMetadataServiceRegistry(MetadataServiceRegistry metadataServiceRegistry) {
-    _metadataServiceRegistry = metadataServiceRegistry;
-  }
-
-  public void setMetadataContentFactory(MetadataContentFactory metadataContentFactory) {
-    _metadataContentFactory = metadataContentFactory;
-  }
-
-  public void setNamespaceService(NamespaceService namespaceService) {
-    _namespaceService = namespaceService;
-  }
-
-  public void setTransactionService(TransactionService transactionService) {
-    _transactionService = transactionService;
-  }
-
-  public void setBehaviourFilter(BehaviourFilter behaviourFilter) {
-    _behaviourFilter = behaviourFilter;
-  }
-
-  public void setNodeService(NodeService nodeService) {
-    _nodeService = nodeService;
-  }
-
-  public void setActionService(ActionService actionService) {
-    _actionService = actionService;
-  }
-
-  // ---------------------------------------------------
-  // Public methods
-  // ---------------------------------------------------
-
-  @Override
-  public void writeSynchronized(final NodeRef nodeRef) throws UpdateMetadataException {
-      AuthenticationUtil.runAsSystem(new AuthenticationUtil.RunAsWork<Void>() {
-
-          @Override
-          public Void doWork() throws Exception {
-            
-            doUpdateProperties(nodeRef);
-            return null;
-          }
-
-        });
-
-        if (_deleteRenditions) {
-          deleteRenditions(nodeRef);
-        }
-  	
-  }
-  
-  private void deleteRenditions(NodeRef nodeRef) {
-      final QName ASSOC_WEBPREVIEW = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "webpreview");
-      final QName ASSOC_PDF = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "pdf");
-      final QName ASSOC_DOCLIB = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "doclib");
-
-      // Delete web preview
-      triggerDeleteRendition(ASSOC_WEBPREVIEW, nodeRef);
-
-      // Delete pdf rendition
-      triggerDeleteRendition(ASSOC_PDF, nodeRef);
-
-      // Delete thumbnail (doclib)
-      triggerDeleteRendition(ASSOC_DOCLIB, nodeRef);
-    }
-
-    private void triggerDeleteRendition(final QName renditionQName, NodeRef nodeRef) {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Deleting rendition " + renditionQName);
-      }
-
-      final Action deleteRenditionAction = _actionService.createAction(DeleteRenditionActionExecuter.NAME);
-      deleteRenditionAction.setParameterValue(DeleteRenditionActionExecuter.PARAM_RENDITION_DEFINITION_NAME, renditionQName);
-      _actionService.executeAction(deleteRenditionAction, nodeRef);
-    }
-  
-  @Override
-  public void write(NodeRef document) throws UpdateMetadataException {
-    write(document, null);
-  }
-
-  @Override
-  public void write(NodeRef document, MetadataWriterCallback callback) throws UpdateMetadataException {
-
-    // set up the transaction listener
-    _transactionListener = new MetadataWriterTransactionListener();
-
-    AlfrescoTransactionSupport.bindListener(_transactionListener);
-    AlfrescoTransactionSupport.bindResource(KEY_UPDATER, new MetadataWriterUpdater(document, callback));
-    AlfrescoTransactionSupport.bindResource(KEY_FAIL_SILENTLY_ON_TIMEOUT, _failSilentlyOnTimeout);
-  }
-
-  // ---------------------------------------------------
-  // Private methods
-  // ---------------------------------------------------
-  private void writeNode(final NodeRef contentRef) throws UpdateMetadataException {
-
-    final Map<QName, Serializable> properties = _nodeMetadataProcessor.processNode(contentRef);
-
-    RetryingTransactionHelper.RetryingTransactionCallback<Void> callback = new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
-
-      public Void execute() throws Throwable {
-        // there's STILL some problems with this, have to disable all...
-        // _behaviourFilter.disableBehaviour(ContentModel.ASPECT_VERSIONABLE);
-        // _behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
-        // _behaviourFilter.disableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
-        _behaviourFilter.disableBehaviour();
-        if (contentRef == null || !_nodeService.exists(contentRef)) {
-          LOG.warn("Node " + contentRef + " does not exist. Aborting writeNode...");
-          return null;
-        }
-
-        assert contentRef != null;
-        assert properties != null;
-
-        final ContentFacade content;
-        try {
-          content = _metadataContentFactory.createContent(contentRef);
-        } catch (final IOException ioe) {
-          throw new UpdateMetadataException("Could not create metadata content from node " + contentRef, ioe);
-        } catch (final UnsupportedMimetypeException ume) {
-          throw new UpdateMetadataException("Could not create metadata content for unknown mimetype!", ume);
-        }
-
-        final Map<String, Serializable> propertyMap = createPropertyMap(properties);
-
-        for (final Map.Entry<String, Serializable> property : propertyMap.entrySet()) {
-
-          final Serializable value = convert(property.getValue());
-
-          try {
-            content.writeMetadata(property.getKey(), value);
-          } catch (final ContentException e) {
-            LOG.warn("Could not export property " + property.getKey() + " with value " + value, e);
-
-            try {
-              content.abort();
-            } catch (final ContentException ce) {
-              throw new AlfrescoRuntimeException("Unable to abort the metadata write!", ce);
-            }
-
-            return null;
-          }
-        }
-
-        try {
-          content.save();
-          
-        } catch (final ContentException e) {
-          throw new UpdateMetadataException("Could not save after update!", e);
-        } finally {
-          // _behaviourFilter.enableBehaviour(ContentModel.ASPECT_VERSIONABLE);
-          // _behaviourFilter.enableBehaviour(ContentModel.ASPECT_AUDITABLE);
-          // _behaviourFilter.enableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
-          _behaviourFilter.enableBehaviour();
-        }
-
-        return null;
-      }
-
-    };
-
-    RetryingTransactionHelper transactionHelper = _transactionService.getRetryingTransactionHelper();
-
-    transactionHelper.doInTransaction(callback, false, true);
-  }
-
-  private Map<QName, String> convertMappings(final Properties mapping) {
-
-    final Map<QName, String> convertedMapping = new HashMap<QName, String>(mapping.size());
-
-    for (final Map.Entry<Object, Object> entry : mapping.entrySet()) {
-      final String qnameStr = (String) entry.getValue();
-      final String propertyName = (String) entry.getKey();
-
-      try {
-        final QName qName = QName.createQName(qnameStr, _namespaceService);
-        convertedMapping.put(qName, propertyName);
-      } catch (final NamespaceException ne) {
-        LOG.warn("Could not create QName for " + qnameStr + ", cause: " + ne);
-      }
-
-    }
-
-    return convertedMapping;
-  }
-
-  private final Serializable convert(final Serializable value) {
-
-    for (final ValueConverter c : _converters) {
-      if (c.applicable(value)) {
-        return c.convert(value);
-      }
-    }
-
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Did not find any converter for value " + value);
-    }
-
-    return value;
-
-  }
-
-  private Map<String, Serializable> createPropertyMap(final Map<QName, Serializable> properties) {
-    final HashMap<String, Serializable> propertyMap = new HashMap<String, Serializable>(properties.size());
-
-    for (final Map.Entry<QName, Serializable> p : properties.entrySet()) {
-
-      if (_metadataMapping.containsKey(p.getKey())) {
-        final Serializable extractedValue = PropertyValueExtractor.extractValue(p.getValue());
-
-        if (extractedValue != null) {
-          propertyMap.put(_metadataMapping.get(p.getKey()), extractedValue);
-        }
-      } else {
-        // this property should not be written!
-        if (LOG.isTraceEnabled()) {
-          LOG.trace("Metadata " + p.getKey() + " with value " + p.getValue() + " is not mapped and being ignored!");
-        }
-      }
-    }
-
-    return propertyMap;
-
-  }
-
-  private void doUpdateProperties(final NodeRef node) {
-
-    if (node == null || !_nodeService.exists(node)) {
-      LOG.warn("Node " + node + " does not exist. Aborting doUpdateProperties...");
-      return;
-    }
-
-    final Serializable failOnUnsupportedValue = _nodeService.getProperty(node, MetadataWriterModel.PROP_METADATA_FAIL_ON_UNSUPPORTED);
-
-    boolean failOnUnsupported = true;
-
-    if (failOnUnsupportedValue != null) {
-      failOnUnsupported = (Boolean) failOnUnsupportedValue;
-    }
-
-    if (!_nodeVerifierProcessor.verifyDocument(node)) {
-
-      return;
-    }
-
-    try {
-      // there's STILL some problems with this, have to disable all...
-      // _behaviourFilter.disableBehaviour(ContentModel.ASPECT_VERSIONABLE);
-      // _behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
-      // _behaviourFilter.disableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
-      _behaviourFilter.disableBehaviour();
-
-      try {
-        writeNode(node);
-      } finally {
-        // _behaviourFilter.enableBehaviour(ContentModel.ASPECT_VERSIONABLE);
-        // _behaviourFilter.enableBehaviour(ContentModel.ASPECT_AUDITABLE);
-        // _behaviourFilter.enableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
-        _behaviourFilter.enableBehaviour();
-      }
-
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Successfully wrote metadata properties on node: " + node);
-      }
-    } catch (final UpdateMetadataException ume) {
-      if (failOnUnsupported) {
+	private TransactionListener _transactionListener;
+
+	@Autowired
+	@Qualifier("NodeService")
+	private NodeService _nodeService;
+
+	@Autowired
+	@Qualifier("metadata-writer.metadataProcessor")
+	private NodeMetadataProcessor _nodeMetadataProcessor;
+
+	@Autowired
+	@Qualifier("metadata-writer.verifierProcessor")
+	private NodeVerifierProcessor _nodeVerifierProcessor;
+
+	@Autowired
+	@Qualifier("ActionService")
+	private ActionService _actionService;
+
+	/**
+	 * Controls if existing renditions will be deleted after a successful metadata
+	 * write. If renditions are not deleted they may not reflect the actual node
+	 * content Controls if existing renditions will be deleted after a successful
+	 * metadata write. If renditions are not deleted they may not reflect the
+	 * actual node content
+	 */
+	@Value("${metadata-writer.deleteRenditions}")
+	private boolean _deleteRenditions = true;
+
+	private static final Object KEY_UPDATER = MetadataService.class.getName() + ".updater";
+	private static final Object KEY_FAIL_SILENTLY_ON_TIMEOUT = MetadataService.class.getName() + ".failSilently";
+	private ExecutorService _executorService;
+
+	@Value("${metadata-writer.default.timeout}")
+	private int _timeout = MetadataService.DEFAULT_TIMEOUT;
+
+	@Value("${metadata-writer.default.failSilentlyOnTimeout}")
+	private boolean _failSilentlyOnTimeout = false;
+
+	public void setConverters(List<ValueConverter> converters) {
+		_converters = converters;
+	}
+
+	public void setMappings(Properties mappings) {
+		_metadataMapping = convertMappings(mappings);
+	}
+
+	public void setFailSilentlyOnTimeout(String failSilentlyOnTimeout) {
+		if (LOG.isInfoEnabled()) {
+			LOG.info("Fail metadatawriter silently on timeout: " + failSilentlyOnTimeout);
+		}
+
+		_failSilentlyOnTimeout = StringUtils.isBlank(failSilentlyOnTimeout) ? false : failSilentlyOnTimeout.equalsIgnoreCase("true");
+	}
+
+	public void setMetadataServiceRegistry(MetadataServiceRegistry metadataServiceRegistry) {
+		_metadataServiceRegistry = metadataServiceRegistry;
+	}
+
+	public void setMetadataContentFactory(MetadataContentFactory metadataContentFactory) {
+		_metadataContentFactory = metadataContentFactory;
+	}
+
+	public void setNamespaceService(NamespaceService namespaceService) {
+		_namespaceService = namespaceService;
+	}
+
+	public void setTransactionService(TransactionService transactionService) {
+		_transactionService = transactionService;
+	}
+
+	public void setBehaviourFilter(BehaviourFilter behaviourFilter) {
+		_behaviourFilter = behaviourFilter;
+	}
+
+	public void setNodeService(NodeService nodeService) {
+		_nodeService = nodeService;
+	}
+
+	public void setActionService(ActionService actionService) {
+		_actionService = actionService;
+	}
+
+	// ---------------------------------------------------
+	// Public methods
+	// ---------------------------------------------------
+
+	@Override
+	public void writeSynchronized(final NodeRef nodeRef) throws UpdateMetadataException {
+		AuthenticationUtil.runAsSystem(new AuthenticationUtil.RunAsWork<Void>() {
+
+			@Override
+			public Void doWork() throws Exception {
+
+				doUpdateProperties(nodeRef);
+				return null;
+			}
+
+		});
+
+		if (_deleteRenditions) {
+			deleteRenditions(nodeRef);
+		}
+
+	}
+
+	private void deleteRenditions(NodeRef nodeRef) {
+		final QName ASSOC_WEBPREVIEW = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "webpreview");
+		final QName ASSOC_PDF = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "pdf");
+		final QName ASSOC_DOCLIB = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "doclib");
+
+		// Delete web preview
+		triggerDeleteRendition(ASSOC_WEBPREVIEW, nodeRef);
+
+		// Delete pdf rendition
+		triggerDeleteRendition(ASSOC_PDF, nodeRef);
+
+		// Delete thumbnail (doclib)
+		triggerDeleteRendition(ASSOC_DOCLIB, nodeRef);
+	}
+
+	private void triggerDeleteRendition(final QName renditionQName, NodeRef nodeRef) {
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("Deleting rendition " + renditionQName);
+		}
+
+		final Action deleteRenditionAction = _actionService.createAction(DeleteRenditionActionExecuter.NAME);
+		deleteRenditionAction.setParameterValue(DeleteRenditionActionExecuter.PARAM_RENDITION_DEFINITION_NAME, renditionQName);
+		_actionService.executeAction(deleteRenditionAction, nodeRef);
+	}
+
+	@Override
+	public void write(NodeRef document) throws UpdateMetadataException {
+		write(document, null);
+	}
+
+	@Override
+	public void write(NodeRef document, MetadataWriterCallback callback) throws UpdateMetadataException {
+
+		Set<TransactionListener> listeners = AlfrescoTransactionSupport.getListeners();
+		boolean bindListener = true;
+		for (TransactionListener tl : listeners) {
+			if (tl.getClass().equals(MetadataWriterTransactionListener.class)) {
+				bindListener = false;
+			}
+		}
+		if (bindListener) {
+			// set up the transaction listener
+			_transactionListener = new MetadataWriterTransactionListener();
+			AlfrescoTransactionSupport.bindListener(_transactionListener);
+		}
+		
+		Set<MetadataWriterUpdater> metadataWriterUpdaters = new HashSet<>();
+		if (AlfrescoTransactionSupport.getResource(KEY_UPDATER) != null) {
+			metadataWriterUpdaters = AlfrescoTransactionSupport.getResource(KEY_UPDATER);
+		}
+		metadataWriterUpdaters.add(new MetadataWriterUpdater(document, callback));
+		
+		AlfrescoTransactionSupport.bindResource(KEY_UPDATER, metadataWriterUpdaters);
+		AlfrescoTransactionSupport.bindResource(KEY_FAIL_SILENTLY_ON_TIMEOUT, _failSilentlyOnTimeout);
+
+	}
+
+	// ---------------------------------------------------
+	// Private methods
+	// ---------------------------------------------------
+	private void writeNode(final NodeRef contentRef) throws UpdateMetadataException {
+
+		final Map<QName, Serializable> properties = _nodeMetadataProcessor.processNode(contentRef);
+
+		RetryingTransactionHelper.RetryingTransactionCallback<Void> callback = new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
+
+			public Void execute() throws Throwable {
+				// there's STILL some problems with this, have to disable all...
+				// _behaviourFilter.disableBehaviour(ContentModel.ASPECT_VERSIONABLE);
+				// _behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
+				// _behaviourFilter.disableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+				_behaviourFilter.disableBehaviour();
+				if (contentRef == null || !_nodeService.exists(contentRef)) {
+					LOG.warn("Node " + contentRef + " does not exist. Aborting writeNode...");
+					return null;
+				}
+
+				assert contentRef != null;
+				assert properties != null;
+
+				final ContentFacade content;
+				try {
+					content = _metadataContentFactory.createContent(contentRef);
+				} catch (final IOException ioe) {
+					throw new UpdateMetadataException("Could not create metadata content from node " + contentRef, ioe);
+				} catch (final UnsupportedMimetypeException ume) {
+					throw new UpdateMetadataException("Could not create metadata content for unknown mimetype!", ume);
+				}
+
+				final Map<String, Serializable> propertyMap = createPropertyMap(properties);
+
+				for (final Map.Entry<String, Serializable> property : propertyMap.entrySet()) {
+
+					final Serializable value = convert(property.getValue());
+
+					try {
+						content.writeMetadata(property.getKey(), value);
+					} catch (final ContentException e) {
+						LOG.warn("Could not export property " + property.getKey() + " with value " + value, e);
+
+						try {
+							content.abort();
+						} catch (final ContentException ce) {
+							throw new AlfrescoRuntimeException("Unable to abort the metadata write!", ce);
+						}
+
+						return null;
+					}
+				}
+
+				try {
+					content.save();
+
+				} catch (final ContentException e) {
+					throw new UpdateMetadataException("Could not save after update!", e);
+				} finally {
+					// _behaviourFilter.enableBehaviour(ContentModel.ASPECT_VERSIONABLE);
+					// _behaviourFilter.enableBehaviour(ContentModel.ASPECT_AUDITABLE);
+					// _behaviourFilter.enableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+					_behaviourFilter.enableBehaviour();
+				}
+
+				return null;
+			}
+
+		};
+
+		RetryingTransactionHelper transactionHelper = _transactionService.getRetryingTransactionHelper();
+
+		transactionHelper.doInTransaction(callback, false, true);
+	}
+
+	private Map<QName, String> convertMappings(final Properties mapping) {
+
+		final Map<QName, String> convertedMapping = new HashMap<QName, String>(mapping.size());
+
+		for (final Map.Entry<Object, Object> entry : mapping.entrySet()) {
+			final String qnameStr = (String) entry.getValue();
+			final String propertyName = (String) entry.getKey();
+
+			try {
+				final QName qName = QName.createQName(qnameStr, _namespaceService);
+				convertedMapping.put(qName, propertyName);
+			} catch (final NamespaceException ne) {
+				LOG.warn("Could not create QName for " + qnameStr + ", cause: " + ne);
+			}
+
+		}
+
+		return convertedMapping;
+	}
+
+	private final Serializable convert(final Serializable value) {
+
+		for (final ValueConverter c : _converters) {
+			if (c.applicable(value)) {
+				return c.convert(value);
+			}
+		}
+
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("Did not find any converter for value " + value);
+		}
+
+		return value;
+
+	}
+
+	private Map<String, Serializable> createPropertyMap(final Map<QName, Serializable> properties) {
+		final HashMap<String, Serializable> propertyMap = new HashMap<String, Serializable>(properties.size());
+
+		for (final Map.Entry<QName, Serializable> p : properties.entrySet()) {
+
+			if (_metadataMapping.containsKey(p.getKey())) {
+				final Serializable extractedValue = PropertyValueExtractor.extractValue(p.getValue());
+
+				if (extractedValue != null) {
+					propertyMap.put(_metadataMapping.get(p.getKey()), extractedValue);
+				}
+			} else {
+				// this property should not be written!
+				if (LOG.isTraceEnabled()) {
+					LOG.trace("Metadata " + p.getKey() + " with value " + p.getValue() + " is not mapped and being ignored!");
+				}
+			}
+		}
+
+		return propertyMap;
+
+	}
+
+	private void doUpdateProperties(final NodeRef node) {
+
+		if (node == null || !_nodeService.exists(node)) {
+			LOG.warn("Node " + node + " does not exist. Aborting doUpdateProperties...");
+			return;
+		}
+
+		final Serializable failOnUnsupportedValue = _nodeService.getProperty(node, MetadataWriterModel.PROP_METADATA_FAIL_ON_UNSUPPORTED);
+
+		boolean failOnUnsupported = true;
+
+		if (failOnUnsupportedValue != null) {
+			failOnUnsupported = (Boolean) failOnUnsupportedValue;
+		}
+
+		if (!_nodeVerifierProcessor.verifyDocument(node)) {
+
+			return;
+		}
+
+		try {
+			// there's STILL some problems with this, have to disable all...
+			// _behaviourFilter.disableBehaviour(ContentModel.ASPECT_VERSIONABLE);
+			// _behaviourFilter.disableBehaviour(ContentModel.ASPECT_AUDITABLE);
+			// _behaviourFilter.disableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+			_behaviourFilter.disableBehaviour();
+
+			try {
+				writeNode(node);
+			} finally {
+				// _behaviourFilter.enableBehaviour(ContentModel.ASPECT_VERSIONABLE);
+				// _behaviourFilter.enableBehaviour(ContentModel.ASPECT_AUDITABLE);
+				// _behaviourFilter.enableBehaviour(MetadataWriterModel.ASPECT_METADATA_WRITEABLE);
+				_behaviourFilter.enableBehaviour();
+			}
+
+			if (LOG.isDebugEnabled()) {
+				LOG.debug("Successfully wrote metadata properties on node: " + node);
+			}
+		} catch (final UpdateMetadataException ume) {
+			if (failOnUnsupported) {
         throw new AlfrescoRuntimeException("Could not write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME) + "( " + node + ")",
-            ume);
-      } else {
-        LOG.warn("Failed to write metadata for node " + node.toString() + ", caused by " + ume.getMessage());
+						ume);
+			} else {
+				LOG.warn("Failed to write metadata for node " + node.toString() + ", caused by " + ume.getMessage());
 
-        if (LOG.isDebugEnabled()) {
+				if (LOG.isDebugEnabled()) {
           LOG.debug("Failed to write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME) + " (" + node + ")", ume);
-        }
-      }
-    } catch (final Exception ex) {
+				}
+			}
+		} catch (final Exception ex) {
 
-      LOG.warn("Failed to write metadata for node " + node.toString() + ", caused by " + ex.getMessage());
-      if (LOG.isDebugEnabled()) {
+			LOG.warn("Failed to write metadata for node " + node.toString() + ", caused by " + ex.getMessage());
+			if (LOG.isDebugEnabled()) {
         LOG.debug("Failed to write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME) + " (" + node + ")", ex);
-      }
+			}
 
-    } finally {
-      _behaviourFilter.enableBehaviour();
-    }
-  }
+		} finally {
+			_behaviourFilter.enableBehaviour();
+		}
+	}
 
-  private class MetadataWriterTransactionListener extends TransactionListenerAdapter {
+	private class MetadataWriterTransactionListener extends TransactionListenerAdapter {
 
-    @Override
-    public void afterCommit() {
-      MetadataWriterUpdater updater = AlfrescoTransactionSupport.getResource(KEY_UPDATER);
-      boolean failSilentlyOnTimeout = AlfrescoTransactionSupport.getResource(KEY_FAIL_SILENTLY_ON_TIMEOUT);
+		@Override
+		public void afterCommit() {
+			Set<MetadataWriterUpdater> updaters = AlfrescoTransactionSupport.getResource(KEY_UPDATER);
+			boolean failSilentlyOnTimeout = AlfrescoTransactionSupport.getResource(KEY_FAIL_SILENTLY_ON_TIMEOUT);
 
-      if (updater == null) {
-        throw new Error("MetadataWriterUpdater was null after commit!");
-      }
+			if (updaters == null || updaters.isEmpty()) {
+				throw new Error("MetadataWriterUpdater was null or empty after commit!");
+			}
 
-      FutureTask<Void> task = null;
-      try {
-        task = new FutureTask<Void>(updater);
+			for(MetadataWriterUpdater updater : updaters) {
+				FutureTask<Void> task = null;
+				try {
+					task = new FutureTask<Void>(updater);
+	
+					_executorService.execute(task);
+	
+					task.get(_timeout, TimeUnit.MILLISECONDS);
+				} catch (TimeoutException e) {
+					task.cancel(true);
+	
+					LOG.warn(e.getMessage(), e);
+	
+					if (!failSilentlyOnTimeout) {
+						throw new RuntimeException(e);
+					}
+				} catch (InterruptedException e) {
+					// We were asked to stop
+					task.cancel(true);
+	
+					return;
+				} catch (ExecutionException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+	}
 
-        _executorService.execute(task);
+	private class MetadataWriterUpdater implements Callable<Void> {
 
-        task.get(_timeout, TimeUnit.MILLISECONDS);
-      } catch (TimeoutException e) {
-        task.cancel(true);
+		private final NodeRef _nodeRef;
+		private final MetadataWriterCallback _callback;
 
-        LOG.warn(e.getMessage(), e);
+		public MetadataWriterUpdater(final NodeRef nodeRef, final MetadataWriterCallback callback) {
+			_nodeRef = nodeRef;
+			_callback = callback;
+		}
+		
+		
 
-        if (!failSilentlyOnTimeout) {
-          throw new RuntimeException(e);
-        }
-      } catch (InterruptedException e) {
-        // We were asked to stop
-        task.cancel(true);
+		@Override
+		public Void call() throws Exception {
+			AuthenticationUtil.runAsSystem(new AuthenticationUtil.RunAsWork<Void>() {
 
-        return;
-      } catch (ExecutionException e) {
-        throw new RuntimeException(e);
-      }
-    }
-  }
+				@Override
+				public Void doWork() throws Exception {
+					RetryingTransactionHelper.RetryingTransactionCallback<Void> callback = new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
 
-  private class MetadataWriterUpdater implements Callable<Void> {
+						@Override
+						public Void execute() throws Throwable {
+							doUpdateProperties(_nodeRef);
 
-    private final NodeRef _nodeRef;
-    private final MetadataWriterCallback _callback;
+							return null;
+						}
 
-    public MetadataWriterUpdater(final NodeRef nodeRef, final MetadataWriterCallback callback) {
-      _nodeRef = nodeRef;
-      _callback = callback;
-    }
+					};
 
-    @Override
-    public Void call() throws Exception {
-      AuthenticationUtil.runAsSystem(new AuthenticationUtil.RunAsWork<Void>() {
+					try {
+						RetryingTransactionHelper txnHelper = _transactionService.getRetryingTransactionHelper();
 
-        @Override
-        public Void doWork() throws Exception {
-          RetryingTransactionHelper.RetryingTransactionCallback<Void> callback = new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
+						txnHelper.doInTransaction(callback, false, true);
+					} catch (Exception ex) {
+						LOG.error("Failed to write metadata properties to node: " + _nodeRef, ex);
+					}
 
-            @Override
-            public Void execute() throws Throwable {
-              doUpdateProperties(_nodeRef);
+					return null;
+				}
 
-              return null;
-            }
+			});
 
-          };
+			if (_deleteRenditions) {
+				deleteRenditions();
+			}
 
-          try {
-            RetryingTransactionHelper txnHelper = _transactionService.getRetryingTransactionHelper();
+			if (_callback != null) {
+				_callback.execute();
+			}
 
-            txnHelper.doInTransaction(callback, false, true);
-          } catch (Exception ex) {
-            LOG.error("Failed to write metadata properties to node: " + _nodeRef, ex);
-          }
+			return null;
+		}
 
-          return null;
-        }
+		/**
+		 * Makes a call to the action service for each rendition with a delete
+		 * request.
+		 */
+		private void deleteRenditions() {
+			final QName ASSOC_WEBPREVIEW = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "webpreview");
+			final QName ASSOC_PDF = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "pdf");
+			final QName ASSOC_DOCLIB = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "doclib");
 
-      });
+			// Delete web preview
+			triggerDeleteRendition(ASSOC_WEBPREVIEW);
 
-      if (_deleteRenditions) {
-        deleteRenditions();
-      }
+			// Delete pdf rendition
+			triggerDeleteRendition(ASSOC_PDF);
 
-      if (_callback != null) {
-        _callback.execute();
-      }
+			// Delete thumbnail (doclib)
+			triggerDeleteRendition(ASSOC_DOCLIB);
+		}
 
-      return null;
-    }
+		private void triggerDeleteRendition(final QName renditionQName) {
+			if (LOG.isDebugEnabled()) {
+				LOG.debug("Deleting rendition " + renditionQName);
+			}
 
-    /**
-     * Makes a call to the action service for each rendition with a delete
-     * request.
-     */
-    private void deleteRenditions() {
-      final QName ASSOC_WEBPREVIEW = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "webpreview");
-      final QName ASSOC_PDF = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "pdf");
-      final QName ASSOC_DOCLIB = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "doclib");
+			final Action deleteRenditionAction = _actionService.createAction(DeleteRenditionActionExecuter.NAME);
+			deleteRenditionAction.setParameterValue(DeleteRenditionActionExecuter.PARAM_RENDITION_DEFINITION_NAME, renditionQName);
+			_actionService.executeAction(deleteRenditionAction, _nodeRef);
+		}
+	}
 
-      // Delete web preview
-      triggerDeleteRendition(ASSOC_WEBPREVIEW);
+	@PostConstruct
+	public void postConstruct() {
+		_executorService = Executors.newCachedThreadPool();
 
-      // Delete pdf rendition
-      triggerDeleteRendition(ASSOC_PDF);
+		_metadataServiceRegistry.register(this);
+	}
 
-      // Delete thumbnail (doclib)
-      triggerDeleteRendition(ASSOC_DOCLIB);
-    }
+	@PreDestroy
+	public void preDestroy() {
+		_executorService.shutdown();
+	}
 
-    private void triggerDeleteRendition(final QName renditionQName) {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Deleting rendition " + renditionQName);
-      }
+	@Override
+	public String getServiceName() {
+		return _serviceName;
+	}
 
-      final Action deleteRenditionAction = _actionService.createAction(DeleteRenditionActionExecuter.NAME);
-      deleteRenditionAction.setParameterValue(DeleteRenditionActionExecuter.PARAM_RENDITION_DEFINITION_NAME, renditionQName);
-      _actionService.executeAction(deleteRenditionAction, _nodeRef);
-    }
-  }
+	public void setServiceName(String serviceName) {
+		_serviceName = serviceName;
+	}
 
-  @PostConstruct
-  public void postConstruct() {
-    _executorService = Executors.newCachedThreadPool();
+	public void setNodeMetadataProcessor(NodeMetadataProcessor nodeMetadataProcessor) {
+		this._nodeMetadataProcessor = nodeMetadataProcessor;
+	}
 
-    _metadataServiceRegistry.register(this);
-  }
-
-  @PreDestroy
-  public void preDestroy() {
-    _executorService.shutdown();
-  }
-
-  @Override
-  public String getServiceName() {
-    return _serviceName;
-  }
-
-  public void setServiceName(String serviceName) {
-    _serviceName = serviceName;
-  }
-
-  public void setNodeMetadataProcessor(NodeMetadataProcessor nodeMetadataProcessor) {
-    this._nodeMetadataProcessor = nodeMetadataProcessor;
-  }
-
-  public void setNodeVerifierProcessor(NodeVerifierProcessor nodeVerifierProcessor) {
-    this._nodeVerifierProcessor = nodeVerifierProcessor;
-  }
-
-
+	public void setNodeVerifierProcessor(NodeVerifierProcessor nodeVerifierProcessor) {
+		this._nodeVerifierProcessor = nodeVerifierProcessor;
+	}
 
 }
