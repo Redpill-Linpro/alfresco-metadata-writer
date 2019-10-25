@@ -429,36 +429,40 @@ public class MetadataServiceImpl implements MetadataService {
 
     @Override
     public void afterCommit() {
-      MetadataWriterUpdater updater = AlfrescoTransactionSupport.getResource(KEY_UPDATER);
-      boolean failSilentlyOnTimeout = AlfrescoTransactionSupport.getResource(KEY_FAIL_SILENTLY_ON_TIMEOUT);
+      final MetadataWriterUpdater updater = AlfrescoTransactionSupport.getResource(KEY_UPDATER);
+      final boolean failSilentlyOnTimeout = AlfrescoTransactionSupport.getResource(KEY_FAIL_SILENTLY_ON_TIMEOUT);
 
       if (updater == null) {
         throw new Error("MetadataWriterUpdater was null after commit!");
       }
+      AuthenticationUtil.runAsSystem(new AuthenticationUtil.RunAsWork<Object>() {
+        @Override
+        public Object doWork() throws Exception {
+          FutureTask<Void> task = null;
+          try {
+            task = new FutureTask<Void>(updater);
 
-      FutureTask<Void> task = null;
-      try {
-        task = new FutureTask<Void>(updater);
+            _executorService.execute(task);
 
-        _executorService.execute(task);
+            task.get(_timeout, TimeUnit.MILLISECONDS);
+          } catch (TimeoutException e) {
+            task.cancel(true);
 
-        task.get(_timeout, TimeUnit.MILLISECONDS);
-      } catch (TimeoutException e) {
-        task.cancel(true);
+            LOG.warn(e.getMessage(), e);
 
-        LOG.warn(e.getMessage(), e);
-
-        if (!failSilentlyOnTimeout) {
-          throw new RuntimeException(e);
+            if (!failSilentlyOnTimeout) {
+              throw new RuntimeException(e);
+            }
+          } catch (InterruptedException e) {
+            // We were asked to stop
+            task.cancel(true);
+          } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+          }
+          return null;
         }
-      } catch (InterruptedException e) {
-        // We were asked to stop
-        task.cancel(true);
+      });
 
-        return;
-      } catch (ExecutionException e) {
-        throw new RuntimeException(e);
-      }
     }
   }
 
@@ -537,9 +541,16 @@ public class MetadataServiceImpl implements MetadataService {
         LOG.debug("Deleting rendition " + renditionQName);
       }
 
-      final Action deleteRenditionAction = _actionService.createAction(DeleteRenditionActionExecuter.NAME);
-      deleteRenditionAction.setParameterValue(DeleteRenditionActionExecuter.PARAM_RENDITION_DEFINITION_NAME, renditionQName);
-      _actionService.executeAction(deleteRenditionAction, _nodeRef);
+      AuthenticationUtil.runAsSystem(new AuthenticationUtil.RunAsWork<Object>() {
+        @Override
+        public Object doWork() throws Exception {
+          final Action deleteRenditionAction = _actionService.createAction(DeleteRenditionActionExecuter.NAME);
+          deleteRenditionAction.setParameterValue(DeleteRenditionActionExecuter.PARAM_RENDITION_DEFINITION_NAME, renditionQName);
+          _actionService.executeAction(deleteRenditionAction, _nodeRef);
+          return null;
+        }
+      });
+
     }
   }
 
