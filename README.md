@@ -20,7 +20,7 @@
  </bean>
 ```
 * In the 'mappings' property, you define what properties you want to be written
-  on the document.
+  on the document. If they exist on the document, they will be written, other properties are ignored.
 
 * In the 'serviceName' property, you define the name of your custom metadata service.
  
