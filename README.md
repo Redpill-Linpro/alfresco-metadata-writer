@@ -1,13 +1,30 @@
-##Using the metadata writer ##
+# Using the metadata writer
 
 * Include the module in your project
+```xml
+    <dependency>
+      <groupId>org.redpill-linpro.alfresco.module</groupId>
+      <artifactId>metadatawriter</artifactId>
+      <version>4.2.16-SNAPSHOT</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.bouncycastle</groupId>
+          <artifactId>bctsp-jdk14</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.sun</groupId>
+          <artifactId>tools</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+```
 * Define a bean in a -context.xml file:
 ```xml
 <bean id="my.metadata.service.id" class="org.redpill.alfresco.module.metadatawriter.services.impl.MetadataServiceImpl" parent="metadata-writer.abstract.service">
       <property name="serviceName" value="my.metadata.service" />
       <property name="converters">
         <list>
-          <ref bean="hav.metadata-writer.dateConverter" />
+          <ref bean="my.metadata-writer.dateConverter" />
         </list>
       </property>
       <property name="mappings">
