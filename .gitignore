@@ -5,5 +5,5 @@ metadata-writer-install.launch
 target/
 alf_data_dev
 /bin/
-.idea/
-metadatawriter.iml
+*.iml
+.idea
