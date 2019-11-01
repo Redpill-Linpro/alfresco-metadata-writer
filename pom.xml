@@ -20,7 +20,7 @@
   <artifactId>metadatawriter</artifactId>
   <packaging>jar</packaging>
   <name>Metadata Writer Framework</name>
-  <version>4.2.16-SNAPSHOT</version>
+  <version>4.3.0-SNAPSHOT</version>
 
   <dependencies>
     <dependency>

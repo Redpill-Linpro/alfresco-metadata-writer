@@ -1,22 +1,5 @@
 package org.redpill.alfresco.module.metadatawriter.services.impl;
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
 import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.policy.BehaviourFilter;
@@ -41,16 +24,22 @@ import org.redpill.alfresco.module.metadatawriter.factories.MetadataContentFacto
 import org.redpill.alfresco.module.metadatawriter.factories.MetadataServiceRegistry;
 import org.redpill.alfresco.module.metadatawriter.factories.UnsupportedMimetypeException;
 import org.redpill.alfresco.module.metadatawriter.model.MetadataWriterModel;
-import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
+import org.redpill.alfresco.module.metadatawriter.services.*;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade.ContentException;
-import org.redpill.alfresco.module.metadatawriter.services.MetadataService;
-import org.redpill.alfresco.module.metadatawriter.services.MetadataWriterCallback;
-import org.redpill.alfresco.module.metadatawriter.services.NodeMetadataProcessor;
-import org.redpill.alfresco.module.metadatawriter.services.NodeVerifierProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.*;
 
 @Component("metadata-writer.abstract.service")
 public class MetadataServiceImpl implements MetadataService {
@@ -171,48 +160,48 @@ public class MetadataServiceImpl implements MetadataService {
 
   @Override
   public void writeSynchronized(final NodeRef nodeRef) throws UpdateMetadataException {
-      AuthenticationUtil.runAsSystem(new AuthenticationUtil.RunAsWork<Void>() {
+    AuthenticationUtil.runAsSystem(new AuthenticationUtil.RunAsWork<Void>() {
 
-          @Override
-          public Void doWork() throws Exception {
-            
-            doUpdateProperties(nodeRef);
-            return null;
-          }
+      @Override
+      public Void doWork() throws Exception {
 
-        });
-
-        if (_deleteRenditions) {
-          deleteRenditions(nodeRef);
-        }
-  	
-  }
-  
-  private void deleteRenditions(NodeRef nodeRef) {
-      final QName ASSOC_WEBPREVIEW = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "webpreview");
-      final QName ASSOC_PDF = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "pdf");
-      final QName ASSOC_DOCLIB = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "doclib");
-
-      // Delete web preview
-      triggerDeleteRendition(ASSOC_WEBPREVIEW, nodeRef);
-
-      // Delete pdf rendition
-      triggerDeleteRendition(ASSOC_PDF, nodeRef);
-
-      // Delete thumbnail (doclib)
-      triggerDeleteRendition(ASSOC_DOCLIB, nodeRef);
-    }
-
-    private void triggerDeleteRendition(final QName renditionQName, NodeRef nodeRef) {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Deleting rendition " + renditionQName);
+        doUpdateProperties(nodeRef);
+        return null;
       }
 
-      final Action deleteRenditionAction = _actionService.createAction(DeleteRenditionActionExecuter.NAME);
-      deleteRenditionAction.setParameterValue(DeleteRenditionActionExecuter.PARAM_RENDITION_DEFINITION_NAME, renditionQName);
-      _actionService.executeAction(deleteRenditionAction, nodeRef);
+    });
+
+    if (_deleteRenditions) {
+      deleteRenditions(nodeRef);
     }
-  
+
+  }
+
+  private void deleteRenditions(NodeRef nodeRef) {
+    final QName ASSOC_WEBPREVIEW = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "webpreview");
+    final QName ASSOC_PDF = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "pdf");
+    final QName ASSOC_DOCLIB = QName.createQName(NamespaceService.CONTENT_MODEL_1_0_URI, "doclib");
+
+    // Delete web preview
+    triggerDeleteRendition(ASSOC_WEBPREVIEW, nodeRef);
+
+    // Delete pdf rendition
+    triggerDeleteRendition(ASSOC_PDF, nodeRef);
+
+    // Delete thumbnail (doclib)
+    triggerDeleteRendition(ASSOC_DOCLIB, nodeRef);
+  }
+
+  private void triggerDeleteRendition(final QName renditionQName, NodeRef nodeRef) {
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Deleting rendition " + renditionQName);
+    }
+
+    final Action deleteRenditionAction = _actionService.createAction(DeleteRenditionActionExecuter.NAME);
+    deleteRenditionAction.setParameterValue(DeleteRenditionActionExecuter.PARAM_RENDITION_DEFINITION_NAME, renditionQName);
+    _actionService.executeAction(deleteRenditionAction, nodeRef);
+  }
+
   @Override
   public void write(NodeRef document) throws UpdateMetadataException {
     write(document, null);
@@ -268,6 +257,9 @@ public class MetadataServiceImpl implements MetadataService {
           final Serializable value = convert(property.getValue());
 
           try {
+            if (LOG.isTraceEnabled()) {
+              LOG.trace("Writing metadata " + property.getKey() + ": " + value + " to " + contentRef);
+            }
             content.writeMetadata(property.getKey(), value);
           } catch (final ContentException e) {
             LOG.warn("Could not export property " + property.getKey() + " with value " + value, e);
@@ -284,7 +276,7 @@ public class MetadataServiceImpl implements MetadataService {
 
         try {
           content.save();
-          
+
         } catch (final ContentException e) {
           throw new UpdateMetadataException("Could not save after update!", e);
         } finally {
@@ -314,6 +306,9 @@ public class MetadataServiceImpl implements MetadataService {
 
       try {
         final QName qName = QName.createQName(qnameStr, _namespaceService);
+        if (LOG.isTraceEnabled()) {
+          LOG.trace("Adding mapping for " + qnameStr + "(" + qName + ")->" + propertyName);
+        }
         convertedMapping.put(qName, propertyName);
       } catch (final NamespaceException ne) {
         LOG.warn("Could not create QName for " + qnameStr + ", cause: " + ne);
@@ -328,6 +323,10 @@ public class MetadataServiceImpl implements MetadataService {
 
     for (final ValueConverter c : _converters) {
       if (c.applicable(value)) {
+        if (LOG.isTraceEnabled()) {
+          LOG.trace("Converting value " + value + " using converter " + c.getClass().getName());
+        }
+
         return c.convert(value);
       }
     }
@@ -344,7 +343,6 @@ public class MetadataServiceImpl implements MetadataService {
     final HashMap<String, Serializable> propertyMap = new HashMap<String, Serializable>(properties.size());
 
     for (final Map.Entry<QName, Serializable> p : properties.entrySet()) {
-
       if (_metadataMapping.containsKey(p.getKey())) {
         final Serializable extractedValue = PropertyValueExtractor.extractValue(p.getValue());
 
@@ -405,7 +403,7 @@ public class MetadataServiceImpl implements MetadataService {
     } catch (final UpdateMetadataException ume) {
       if (failOnUnsupported) {
         throw new AlfrescoRuntimeException("Could not write properties " + _nodeService.getProperties(node) + " to node " + _nodeService.getProperty(node, ContentModel.PROP_NAME) + "( " + node + ")",
-            ume);
+          ume);
       } else {
         LOG.warn("Failed to write metadata for node " + node.toString() + ", caused by " + ume.getMessage());
 
@@ -582,7 +580,6 @@ public class MetadataServiceImpl implements MetadataService {
   public void setNodeVerifierProcessor(NodeVerifierProcessor nodeVerifierProcessor) {
     this._nodeVerifierProcessor = nodeVerifierProcessor;
   }
-
 
 
 }
