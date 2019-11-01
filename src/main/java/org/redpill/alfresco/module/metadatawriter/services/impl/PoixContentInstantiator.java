@@ -42,7 +42,8 @@ public class PoixContentInstantiator implements MetadataContentInstantiator {
   @Override
   public boolean supports(String mimetype) {
     return MimetypeMap.MIMETYPE_OPENXML_WORDPROCESSING.equalsIgnoreCase(mimetype) || MimetypeMap.MIMETYPE_OPENXML_SPREADSHEET.equalsIgnoreCase(mimetype)
-        || MimetypeMap.MIMETYPE_OPENXML_PRESENTATION.equalsIgnoreCase(mimetype);
+        || MimetypeMap.MIMETYPE_OPENXML_PRESENTATION.equalsIgnoreCase(mimetype)
+        || MimetypeMap.MIMETYPE_OPENXML_WORD_TEMPLATE.equalsIgnoreCase(mimetype) || MimetypeMap.MIMETYPE_OPENXML_SPREADSHEET_TEMPLATE.equalsIgnoreCase(mimetype) || MimetypeMap.MIMETYPE_OPENXML_PRESENTATION_TEMPLATE.equalsIgnoreCase(mimetype);
   }
 
 }
