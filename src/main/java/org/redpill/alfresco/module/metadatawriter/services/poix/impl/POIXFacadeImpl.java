@@ -1,14 +1,5 @@
 package org.redpill.alfresco.module.metadatawriter.services.poix.impl;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.text.Normalizer;
-import java.text.Normalizer.Form;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -18,13 +9,22 @@ import org.apache.poi.POIXMLProperties.CoreProperties;
 import org.apache.poi.POIXMLProperties.CustomProperties;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
-import org.apache.poi.xslf.usermodel.XSLFSlideShow;
+import org.apache.poi.xslf.XSLFSlideShow;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.openxmlformats.schemas.officeDocument.x2006.customProperties.CTProperty;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade.ContentException;
 import org.redpill.alfresco.module.metadatawriter.services.poix.POIXFacade;
 import org.springframework.util.Assert;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.text.Normalizer;
+import java.text.Normalizer.Form;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
 
 public class POIXFacadeImpl implements POIXFacade {
 
@@ -75,7 +75,7 @@ public class POIXFacadeImpl implements POIXFacade {
 
     try {
       result = new XSLFSlideShow(pkg);
-    } catch (InvalidFormatException ex) { 
+    } catch (InvalidFormatException ex) {
       throw new org.redpill.alfresco.module.metadatawriter.InvalidFormatException(ex);
     } catch (Exception ex) {
     }
@@ -88,7 +88,7 @@ public class POIXFacadeImpl implements POIXFacade {
       result = new XSSFWorkbook(pkg);
     } catch (Exception ex) {
     }
-    
+
     if (result == null) {
       throw new RuntimeException("Couldn't instantiate any document properties from file!");
     }
@@ -101,13 +101,13 @@ public class POIXFacadeImpl implements POIXFacade {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Exporting metadata " + field + "=" + value);
     }
-    
+
     if (_document == null) {
       return;
     }
 
     POIXMLProperties properties = _document.getProperties();
-    
+
     CustomProperties customProperties = properties.getCustomProperties();
 
     if (customProperties.contains(field)) {
@@ -130,13 +130,13 @@ public class POIXFacadeImpl implements POIXFacade {
     if (_document == null) {
       return;
     }
-    
+
     String normalizedTitle = Normalizer.normalize(title, Form.NFKC);
-    
+
     POIXMLProperties properties = _document.getProperties();
-    
+
     CoreProperties coreProperties = properties.getCoreProperties();
-    
+
     coreProperties.setTitle(normalizedTitle);
   }
 
