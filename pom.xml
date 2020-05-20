@@ -13,24 +13,27 @@
     <alfresco.version>4.2.f</alfresco.version>
     <java.source.version>1.7</java.source.version>
     <java.target.version>1.7</java.target.version>
-    <poi.version>3.10.1-20140922-alfresco-patched</poi.version>
+    <ooxml.version>1.1</ooxml.version>
+    <poi-patched.version>3.10.1-20151016-alfresco-patched</poi-patched.version>
   </properties>
 
   <groupId>org.redpill-linpro.alfresco.module</groupId>
   <artifactId>metadatawriter</artifactId>
   <packaging>jar</packaging>
   <name>Metadata Writer Framework</name>
-  <version>4.3.0</version>
+  <version>4.3.1</version>
 
   <dependencies>
     <dependency>
       <groupId>${alfresco.groupId}</groupId>
       <artifactId>alfresco-repository</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>${alfresco.groupId}</groupId>
       <artifactId>alfresco-remote-api</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -62,21 +65,21 @@
     <dependency>
       <groupId>org.apache.poi</groupId>
       <artifactId>poi</artifactId>
-      <version>3.10-beta2-20130720</version>
+      <version>${poi-patched.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.poi</groupId>
       <artifactId>poi-ooxml</artifactId>
-      <version>3.17</version>
+      <version>${poi-patched.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.poi</groupId>
-      <artifactId>poi-ooxml-schemas</artifactId>
-      <version>3.10-beta2-20130720</version>
+      <artifactId>ooxml-schemas</artifactId>
+      <version>${ooxml.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -171,6 +174,7 @@
       <id>redpill-public</id>
       <url>https://maven.redpill-linpro.com/nexus/content/groups/public</url>
     </repository>
+
   </repositories>
 
 </project>
