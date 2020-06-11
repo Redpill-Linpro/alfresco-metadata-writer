@@ -49,7 +49,8 @@ public class MetadataWriterConfiguration {
     instantiators.add(_poiFsInstantiator);
     instantiators.add(_poixFsInstantiator);
     instantiators.add(_pdfInstantiator);
-    instantiators.add(_odfInstantiator);
+    //Disable since they ODF does not work atm
+    //instantiators.add(_odfInstantiator);
 
     metadataContentFactory.setInstantiators(instantiators);
 
