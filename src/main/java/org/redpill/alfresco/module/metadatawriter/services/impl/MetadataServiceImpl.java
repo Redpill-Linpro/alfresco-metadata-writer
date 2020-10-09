@@ -5,10 +5,7 @@ import org.alfresco.model.ContentModel;
 import org.alfresco.repo.policy.BehaviourFilter;
 import org.alfresco.repo.rendition.executer.DeleteRenditionActionExecuter;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
-import org.alfresco.repo.transaction.AlfrescoTransactionSupport;
-import org.alfresco.repo.transaction.RetryingTransactionHelper;
-import org.alfresco.repo.transaction.TransactionListener;
-import org.alfresco.repo.transaction.TransactionListenerAdapter;
+import org.alfresco.repo.transaction.*;
 import org.alfresco.service.cmr.action.Action;
 import org.alfresco.service.cmr.action.ActionService;
 import org.alfresco.service.cmr.repository.NodeRef;
@@ -211,11 +208,11 @@ public class MetadataServiceImpl implements MetadataService {
   public void write(NodeRef document, MetadataWriterCallback callback) throws UpdateMetadataException {
 
     // set up the transaction listener
-    _transactionListener = new MetadataWriterTransactionListener();
+    TransactionListener transactionListener = new MetadataWriterTransactionListener(document);
 
-    AlfrescoTransactionSupport.bindListener(_transactionListener);
-    AlfrescoTransactionSupport.bindResource(KEY_UPDATER, new MetadataWriterUpdater(document, callback));
-    AlfrescoTransactionSupport.bindResource(KEY_FAIL_SILENTLY_ON_TIMEOUT, _failSilentlyOnTimeout);
+    AlfrescoTransactionSupport.bindListener(transactionListener);
+    AlfrescoTransactionSupport.bindResource(KEY_UPDATER + document.getId(), new MetadataWriterUpdater(document, callback));
+    AlfrescoTransactionSupport.bindResource(KEY_FAIL_SILENTLY_ON_TIMEOUT + document.getId(), _failSilentlyOnTimeout);
   }
 
   // ---------------------------------------------------
@@ -425,10 +422,16 @@ public class MetadataServiceImpl implements MetadataService {
 
   private class MetadataWriterTransactionListener extends TransactionListenerAdapter {
 
+    NodeRef nodeRef;
+
+    public MetadataWriterTransactionListener(NodeRef nodeRef) {
+      this.nodeRef = nodeRef;
+    }
+
     @Override
     public void afterCommit() {
-      final MetadataWriterUpdater updater = AlfrescoTransactionSupport.getResource(KEY_UPDATER);
-      final boolean failSilentlyOnTimeout = AlfrescoTransactionSupport.getResource(KEY_FAIL_SILENTLY_ON_TIMEOUT);
+      final MetadataWriterUpdater updater = AlfrescoTransactionSupport.getResource(KEY_UPDATER + nodeRef.getId());
+      final boolean failSilentlyOnTimeout = AlfrescoTransactionSupport.getResource(KEY_FAIL_SILENTLY_ON_TIMEOUT + nodeRef.getId());
 
       if (updater == null) {
         throw new Error("MetadataWriterUpdater was null after commit!");
