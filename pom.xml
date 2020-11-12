@@ -39,7 +39,7 @@
     <ooxml.version>1.1</ooxml.version>
     <poi-patched.version>4.0.1</poi-patched.version>
     <simple-odf.version>0.9.0-RC1</simple-odf.version>
-    <rl.alfresco-test.version>4.0.1-SNAPSHOT</rl.alfresco-test.version>
+    <rl.alfresco-test.version>4.0.1</rl.alfresco-test.version>
   </properties>
 
   <!-- Libs used in Unit and Integration tests -->
