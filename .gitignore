@@ -8,3 +8,4 @@ alf_data_dev
 *.iml
 .idea
 *.tar.gz
+.java-version
