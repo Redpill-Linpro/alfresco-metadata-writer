@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.redpill-linpro.alfresco.module</groupId>
   <artifactId>metadatawriter</artifactId>
-  <version>5.0.0-SNAPSHOT</version>
+  <version>5.0.0</version>
   <name>metadatawriter Platform/Repository JAR Module</name>
   <description>Platform/Repo JAR Module (to be included in the alfresco.war)</description>
   <packaging>jar</packaging>
