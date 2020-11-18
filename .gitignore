@@ -7,3 +7,5 @@ alf_data_dev
 /bin/
 *.iml
 .idea
+*.tar.gz
+.java-version

@@ -1,19 +1,18 @@
-# Using the metadata writer
+# Metadata writer
+Writes Alfresco metadata to files.
+
+## Using the metadata writer
 
 * Include the module in your project
 ```xml
     <dependency>
       <groupId>org.redpill-linpro.alfresco.module</groupId>
       <artifactId>metadatawriter</artifactId>
-      <version>4.2.16-SNAPSHOT</version>
+      <version>5.0.0-SNAPSHOT</version>
       <exclusions>
         <exclusion>
           <groupId>org.bouncycastle</groupId>
           <artifactId>bctsp-jdk14</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.sun</groupId>
-          <artifactId>tools</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -48,3 +47,46 @@
  
 * To indicate that a documents metadata should be written, add the 'mdw:serviceName' and set the value
  to be the 'serviceName' of your custom metadataService. In the example this would be 'my.metadata.service'.
+
+# Known issues
+ODF documents does not work
+
+# Compatibility
+
+This version is made for ACS 6.2.x and later. Verified to work with JDK 11 and ACS 6.2.
+
+Can handle formats:
+* doc, docx
+* xls, xlsx
+* ppt, pptx
+* pdf
+
+# Developer instructions
+
+This is an ACS project for Alfresco SDK 4.0.
+
+Download java11-openjdk-dcevm-linux.tar.gz from https://github.com/TravaOpenJDK/trava-jdk-11-dcevm/releases and put into the src/main/docker/ folder.
+
+Run with `./run.sh build_start` or `./run.bat build_start` and verify that it
+
+ * Runs Alfresco Content Service (ACS)
+ * (Optional) Runs Alfresco Share
+ * Runs Alfresco Search Service (ASS)
+ * Runs PostgreSQL database
+ * Deploys the JAR assembled module
+ 
+All the services of the project are now run as docker containers. The run script offers the next tasks:
+
+ * `build_start`. Build the whole project, recreate the ACS docker image, start the dockerised environment composed by ACS, Share (optional), ASS 
+ and PostgreSQL and tail the logs of all the containers.
+ * `build_start_it_supported`. Build the whole project including dependencies required for IT execution, recreate the ACS docker image, start the dockerised environment 
+ composed by ACS, Share (optional), ASS and PostgreSQL and tail the logs of all the containers.
+ * `start`. Start the dockerised environment without building the project and tail the logs of all the containers.
+ * `stop`. Stop the dockerised environment.
+ * `purge`. Stop the dockerised container and delete all the persistent data (docker volumes).
+ * `tail`. Tail the logs of all the containers.
+ * `reload_acs`. Build the ACS module, recreate the ACS docker image and restart the ACS container.
+ * `build_test`. Build the whole project, recreate the ACS docker image, start the dockerised environment, execute the integration tests and stop 
+ the environment.
+ * `test`. Execute the integration tests (the environment must be already started).
+

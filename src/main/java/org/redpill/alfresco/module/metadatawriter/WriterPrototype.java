@@ -53,8 +53,6 @@ public class WriterPrototype {
         dsi = PropertySetFactory.newDocumentSummaryInformation();
       } catch (final NoPropertySetStreamException e) {
         throw new RuntimeException(e);
-      } catch (final MarkUnsupportedException e) {
-        throw new RuntimeException(e);
       } catch (final UnexpectedPropertySetTypeException e) {
         throw new RuntimeException(e);
       }

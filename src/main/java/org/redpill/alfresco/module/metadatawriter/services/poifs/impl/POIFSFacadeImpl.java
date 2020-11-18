@@ -1,35 +1,19 @@
 package org.redpill.alfresco.module.metadatawriter.services.poifs.impl;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
-import java.text.Normalizer;
-import java.text.Normalizer.Form;
-import java.util.Date;
-
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
-import org.apache.poi.hpsf.CustomProperties;
-import org.apache.poi.hpsf.DocumentSummaryInformation;
-import org.apache.poi.hpsf.MarkUnsupportedException;
-import org.apache.poi.hpsf.NoPropertySetStreamException;
-import org.apache.poi.hpsf.PropertySet;
-import org.apache.poi.hpsf.PropertySetFactory;
-import org.apache.poi.hpsf.SummaryInformation;
-import org.apache.poi.hpsf.UnexpectedPropertySetTypeException;
-import org.apache.poi.hpsf.WritingNotSupportedException;
+import org.apache.poi.hpsf.*;
 import org.apache.poi.poifs.filesystem.DirectoryEntry;
 import org.apache.poi.poifs.filesystem.DocumentEntry;
 import org.apache.poi.poifs.filesystem.DocumentInputStream;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
-import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade.ContentException;
-import org.redpill.alfresco.module.metadatawriter.services.pdfbox.impl.PdfboxFacade;
 import org.redpill.alfresco.module.metadatawriter.services.poifs.POIFSFacade;
+
+import java.io.*;
+import java.text.Normalizer;
+import java.text.Normalizer.Form;
+import java.util.Date;
 
 public class POIFSFacadeImpl implements POIFSFacade {
 
@@ -114,13 +98,13 @@ public class POIFSFacadeImpl implements POIFSFacade {
   }
 
   /*
-   * 
+   *
    * private static String describe( CustomProperties p) { StringBuilder sb =
    * new StringBuilder(); for ( Object key : p.keySet()) { sb.append("\n\t" +
    * key + "=" + p.get(key)); }
-   * 
+   *
    * return sb.toString();
-   * 
+   *
    * }
    */
 
@@ -136,9 +120,9 @@ public class POIFSFacadeImpl implements POIFSFacade {
     try {
       getSummaryInformation().write(getFileSystem().getRoot(), SummaryInformation.DEFAULT_STREAM_NAME);
     } catch (IOException e) {
-      throw new ContentFacade.ContentException("Could not write Summary Information", e);
+      throw new ContentException("Could not write Summary Information", e);
     } catch (WritingNotSupportedException e) {
-      throw new ContentFacade.ContentException("Could not write Summary Information", e);
+      throw new ContentException("Could not write Summary Information", e);
     }
   }
 
@@ -146,9 +130,9 @@ public class POIFSFacadeImpl implements POIFSFacade {
     try {
       getDocumentSummaryInformation().write(getFileSystem().getRoot(), DocumentSummaryInformation.DEFAULT_STREAM_NAME);
     } catch (IOException e) {
-      throw new ContentFacade.ContentException("Could not write Document Summary Information", e);
+      throw new ContentException("Could not write Document Summary Information", e);
     } catch (WritingNotSupportedException e) {
-      throw new ContentFacade.ContentException("Could not write Document Summary Information", e);
+      throw new ContentException("Could not write Document Summary Information", e);
     }
   }
 
@@ -207,8 +191,6 @@ public class POIFSFacadeImpl implements POIFSFacade {
       return ps;
     } catch (NoPropertySetStreamException e) {
       throw new ContentException("Format error in stream " + streamName, e);
-    } catch (MarkUnsupportedException e) {
-      throw new ContentException("Could not create PropertySet for stream " + streamName, e);
     } catch (UnsupportedEncodingException e) {
       throw new ContentException("Unsupported encoding in stream: " + streamName, e);
     } catch (IOException e) {

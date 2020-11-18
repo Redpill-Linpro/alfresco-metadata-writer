@@ -1,16 +1,7 @@
 package org.redpill.alfresco.module.metadatawriter.services.pdfbox.impl;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.Serializable;
-import java.text.Normalizer;
-import java.text.Normalizer.Form;
-import java.util.Calendar;
-import java.util.Date;
-
+import com.lowagie.text.pdf.PdfReader;
+import com.lowagie.text.pdf.PdfStamper;
 import org.alfresco.service.cmr.repository.ContentIOException;
 import org.alfresco.util.TempFileProvider;
 import org.apache.commons.io.IOUtils;
@@ -19,8 +10,11 @@ import org.apache.log4j.Logger;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.redpill.alfresco.module.metadatawriter.services.ContentFacade;
 
-import com.lowagie.text.pdf.PdfReader;
-import com.lowagie.text.pdf.PdfStamper;
+import java.io.*;
+import java.text.Normalizer;
+import java.text.Normalizer.Form;
+import java.util.Calendar;
+import java.util.Date;
 
 public class PdfboxFacade implements ContentFacade {
 
@@ -123,8 +117,8 @@ public class PdfboxFacade implements ContentFacade {
 
         IOUtils.copyLarge(tempInputStream, _outputStream);
       }
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
+    } catch (Throwable ex) {
+      throw new ContentException("Exception when saving pdf document", ex);
     } finally {
       LOG.trace("Closing streams");
       closeQuietly(stamper);
@@ -139,8 +133,8 @@ public class PdfboxFacade implements ContentFacade {
   }
 
   private void loadXmpMetadata() {
-    try {
-      _xmpMetadata = _document.getDocumentCatalog().getMetadata().exportXMPMetadata();
+    try (InputStream inputStream = _document.getDocumentCatalog().getMetadata().exportXMPMetadata()) {
+      _xmpMetadata = XMPMetadata.load(inputStream);
     } catch (Throwable ex) {
       LOG.debug(ex);
       return;
@@ -149,7 +143,7 @@ public class PdfboxFacade implements ContentFacade {
 
   private void saveXmpMetadata() {
     try {
-      _document.getDocumentCatalog().getMetadata().importXMPMetadata(_xmpMetadata);
+      _document.getDocumentCatalog().getMetadata().importXMPMetadata(_xmpMetadata.asByteArray());
     } catch (Throwable ex) {
       LOG.debug(ex);
       return;
@@ -168,7 +162,7 @@ public class PdfboxFacade implements ContentFacade {
 
   /**
    * Sets the title for the PDF.
-   * 
+   *
    * @param title
    */
   public void setTitle(String title) {

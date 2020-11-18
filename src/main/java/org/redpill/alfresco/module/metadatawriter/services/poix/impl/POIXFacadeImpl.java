@@ -3,13 +3,12 @@ package org.redpill.alfresco.module.metadatawriter.services.poix.impl;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.poi.POIXMLDocument;
-import org.apache.poi.POIXMLProperties;
-import org.apache.poi.POIXMLProperties.CoreProperties;
-import org.apache.poi.POIXMLProperties.CustomProperties;
+
+import org.apache.poi.ooxml.POIXMLDocument;
+import org.apache.poi.ooxml.POIXMLProperties;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
-import org.apache.poi.xslf.XSLFSlideShow;
+import org.apache.poi.xslf.usermodel.XSLFSlideShow;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.openxmlformats.schemas.officeDocument.x2006.customProperties.CTProperty;
@@ -108,7 +107,7 @@ public class POIXFacadeImpl implements POIXFacade {
 
     POIXMLProperties properties = _document.getProperties();
 
-    CustomProperties customProperties = properties.getCustomProperties();
+    POIXMLProperties.CustomProperties customProperties = properties.getCustomProperties();
 
     if (customProperties.contains(field)) {
       List<CTProperty> underlyingProperties = customProperties.getUnderlyingProperties().getPropertyList();
@@ -135,7 +134,7 @@ public class POIXFacadeImpl implements POIXFacade {
 
     POIXMLProperties properties = _document.getProperties();
 
-    CoreProperties coreProperties = properties.getCoreProperties();
+    POIXMLProperties.CoreProperties coreProperties = properties.getCoreProperties();
 
     coreProperties.setTitle(normalizedTitle);
   }
